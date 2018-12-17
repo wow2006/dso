@@ -22,12 +22,15 @@
  */
 
 #pragma once
-#define MAX_ACTIVE_FRAMES 100
+
+#include <cmath>
+#include <deque>
+#include <vector>
+#include <fstream>
+#include <iostream>
 
 #include "util/NumType.h"
 #include "util/globalCalib.h"
-#include "vector"
-#include <deque>
 
 #include "FullSystem/HessianBlocks.h"
 #include "FullSystem/PixelSelector2.h"
@@ -36,10 +39,9 @@
 #include "util/FrameShell.h"
 #include "util/IndexThreadReduce.h"
 #include "util/NumType.h"
-#include <fstream>
-#include <iostream>
 
-#include <math.h>
+constexpr int gMaxActiveFrames = 100;
+
 
 namespace dso {
 namespace IOWrap {
@@ -63,6 +65,7 @@ template <typename T> inline void deleteOut(std::vector<T *> &v, const int i) {
   v[i] = v.back();
   v.pop_back();
 }
+
 template <typename T> inline void deleteOutPt(std::vector<T *> &v, const T *i) {
   delete i;
 
@@ -72,6 +75,7 @@ template <typename T> inline void deleteOutPt(std::vector<T *> &v, const T *i) {
       v.pop_back();
     }
 }
+
 template <typename T>
 inline void deleteOutOrder(std::vector<T *> &v, const int i) {
   delete v[i];
@@ -79,6 +83,7 @@ inline void deleteOutOrder(std::vector<T *> &v, const int i) {
     v[k - 1] = v[k];
   v.pop_back();
 }
+
 template <typename T>
 inline void deleteOutOrder(std::vector<T *> &v, const T *element) {
   int i = -1;

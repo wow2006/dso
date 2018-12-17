@@ -28,6 +28,12 @@
  *      Author: engelj
  */
 
+#include <algorithm>
+
+#include <Eigen/LU>
+#include <Eigen/SVD>
+#include <Eigen/Eigenvalues>
+
 #include "FullSystem/FullSystem.h"
 
 #include "FullSystem/ImmaturePoint.h"
@@ -38,10 +44,6 @@
 #include "stdio.h"
 #include "util/globalCalib.h"
 #include "util/globalFuncs.h"
-#include <Eigen/Eigenvalues>
-#include <Eigen/LU>
-#include <Eigen/SVD>
-#include <algorithm>
 
 #include "FullSystem/CoarseInitializer.h"
 #include "FullSystem/CoarseTracker.h"
@@ -53,15 +55,12 @@
 
 #include "util/ImageAndExposure.h"
 
-#include <cmath>
-
 namespace dso {
 int FrameHessian::instanceCounter = 0;
 int PointHessian::instanceCounter = 0;
 int CalibHessian::instanceCounter = 0;
 
 FullSystem::FullSystem() {
-
   int retstat = 0;
   if (setting_logStuff) {
 
@@ -254,7 +253,6 @@ void FullSystem::printResult(std::string file) {
 }
 
 Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
-
   assert(allFrameHistory.size() > 0);
   // set pose initialization.
 
@@ -563,7 +561,6 @@ void FullSystem::activatePointsMT_Reductor(
 }
 
 void FullSystem::activatePointsMT() {
-
   if (ef->nPoints < setting_desiredPointDensity * 0.66)
     currentMinActDist -= 0.8;
   if (ef->nPoints < setting_desiredPointDensity * 0.8)
@@ -804,7 +801,6 @@ void FullSystem::flagPointsForRemoval() {
 }
 
 void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
-
   if (isLost)
     return;
   boost::unique_lock<boost::mutex> lock(trackMutex);
@@ -898,8 +894,8 @@ void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
     return;
   }
 }
-void FullSystem::deliverTrackedFrame(FrameHessian *fh, bool needKF) {
 
+void FullSystem::deliverTrackedFrame(FrameHessian *fh, bool needKF) {
   if (linearizeOperation) {
     if (goStepByStep && lastRefStopID != coarseTracker->refFrameID) {
       MinimalImageF3 img(wG[0], hG[0], fh->dI);
