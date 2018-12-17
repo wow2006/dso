@@ -6,6 +6,8 @@ set(LIBRARY_OUTPUT_PATH    lib)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+include(${CMAKE_SOURCE_DIR}/cmake/Doxygen.cmake)
+
 # TODO flags
 add_definitions("-DENABLE_SSE")
 set(CMAKE_CXX_FLAGS
