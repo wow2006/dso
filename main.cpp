@@ -7,6 +7,7 @@
 
 #include "util/DatasetReader.h"
 #include "FullSystem/FullSystem.h"
+#include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 
 
 struct Config {
@@ -57,15 +58,19 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::thread runthread([&]() {
-    auto pReader = std::make_unique<ImageFolderReader>(g_pConfig->m_sImagesPath,
-                                                       g_pConfig->m_sCalibPath,
-                                                       "", "");
-    pReader->setGlobalCalibration();
+  auto pReader = std::make_unique<ImageFolderReader>(g_pConfig->m_sImagesPath,
+                                                     g_pConfig->m_sCalibPath,
+                                                     "", "");
+  pReader->setGlobalCalibration();
 
+  auto pViewer = std::make_unique<IOWrap::PangolinDSOViewer>(wG[0], hG[0], false);
+
+  std::thread runthread([&]() {
     auto pFullSystem = std::make_unique<dso::FullSystem>();
     pFullSystem->setGammaFunction(pReader->getPhotometricGamma());
     pFullSystem->linearizeOperation = true;
+
+    pFullSystem->outputWrapper.push_back(pViewer.get());
 
     for(int i = 0; i < pReader->getNumImages(); ++i) {
       auto pImage = pReader->getImage(i);
@@ -80,6 +85,8 @@ int main(int argc, char* argv[]) {
 
     pFullSystem->blockUntilMappingIsFinished();
   });
+
+  pViewer->run();
 
   runthread.join();
 
