@@ -121,7 +121,9 @@ inline bool eigenTestNan(const MatXX &m, std::string msg) {
 class FullSystem {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   FullSystem();
+
   virtual ~FullSystem();
 
   // adds a new frame, and creates point & residual structs.
@@ -129,6 +131,7 @@ public:
 
   // marginalizes a frame. drops / marginalizes points & residuals.
   void marginalizeFrame(FrameHessian *frame);
+
   void blockUntilMappingIsFinished();
 
   float optimize(int mnumOptIts);
@@ -156,6 +159,7 @@ private:
 
   // opt single point
   int optimizePoint(PointHessian *point, int minObs, bool flagOOB);
+
   PointHessian *
   optimizeImmaturePoint(ImmaturePoint *point, int minObs,
                         ImmaturePointTemporaryResidual *residuals);
@@ -164,13 +168,21 @@ private:
 
   // mainPipelineFunctions
   Vec4 trackNewCoarse(FrameHessian *fh);
+
   void traceNewCoarse(FrameHessian *fh);
+
   void activatePoints();
+
   void activatePointsMT();
+
   void activatePointsOldFirst();
+
   void flagPointsForRemoval();
+
   void makeNewTraces(FrameHessian *newFrame, float *gtDepth);
+
   void initializeFromInitializer(FrameHessian *newFrame);
+
   void flagFramesForMarginalization(FrameHessian *newFH);
 
   void removeOutliers();
@@ -180,19 +192,28 @@ private:
 
   // solce. eventually migrate to ef.
   void solveSystem(int iteration, double lambda);
+
   Vec3 linearizeAll(bool fixLinearization);
+
   bool doStepFromBackup(float stepfacC, float stepfacT, float stepfacR,
                         float stepfacA, float stepfacD);
+
   void backupState(bool backupLastStep);
+
   void loadSateBackup();
+
   double calcLEnergy();
+
   double calcMEnergy();
+
   void linearizeAll_Reductor(bool fixLinearization,
                              std::vector<PointFrameResidual *> *toRemove,
                              int min, int max, Vec10 *stats, int tid);
+
   void activatePointsMT_Reductor(std::vector<PointHessian *> *optimized,
                                  std::vector<ImmaturePoint *> *toOptimize,
                                  int min, int max, Vec10 *stats, int tid);
+
   void applyRes_Reductor(bool copyJacobians, int min, int max, Vec10 *stats,
                          int tid);
 
@@ -209,8 +230,11 @@ private:
   void setNewFrameEnergyTH();
 
   void printLogLine();
+
   void printEvalLine();
+
   void printEigenValLine();
+
   std::ofstream *calibLog;
   std::ofstream *numsLog;
   std::ofstream *errorsLog;
@@ -234,15 +258,17 @@ private:
   long int statistics_numMargResBwd;
   float statistics_lastFineTrackRMSE;
 
-  // =================== changed by tracker-thread. protected by trackMutex
-  // ============
+  // ====================================================
+  // changed by tracker-thread. protected by trackMutex
+  // ====================================================
   boost::mutex trackMutex;
   std::vector<FrameShell *> allFrameHistory;
   CoarseInitializer *coarseInitializer;
   Vec5 lastCoarseRMSE;
 
-  // ================== changed by mapper-thread. protected by mapMutex
-  // ===============
+  // ====================================================
+  // changed by mapper-thread. protected by mapMutex
+  // ====================================================
   boost::mutex mapMutex;
   std::vector<FrameShell *> allKeyFramesHistory;
 
@@ -253,18 +279,18 @@ private:
   PixelSelector *pixelSelector;
   CoarseDistanceMap *coarseDistanceMap;
 
-  std::vector<FrameHessian *>
-      frameHessians; // ONLY changed in marginalizeFrame and addFrame.
+  // ONLY changed in marginalizeFrame and addFrame.
+  std::vector<FrameHessian *> frameHessians;
   std::vector<PointFrameResidual *> activeResiduals;
   float currentMinActDist;
 
   std::vector<float> allResVec;
 
   // mutex etc. for tracker exchange.
-  boost::mutex
-      coarseTrackerSwapMutex; // if tracker sees that there is a new reference,
-                              // tracker locks [coarseTrackerSwapMutex] and
-                              // swaps the two.
+  boost::mutex coarseTrackerSwapMutex;
+  // if tracker sees that there is a new reference,
+  // tracker locks [coarseTrackerSwapMutex] and
+  // swaps the two.
   CoarseTracker *coarseTracker_forNewKF; // set as as reference. protected by
                                          // [coarseTrackerSwapMutex].
   CoarseTracker *coarseTracker; // always used to track new frames. protected by
@@ -277,12 +303,13 @@ private:
 
   /*
    * tracking always uses the newest KF as reference.
-   *
    */
-
   void makeKeyFrame(FrameHessian *fh);
+
   void makeNonKeyFrame(FrameHessian *fh);
+
   void deliverTrackedFrame(FrameHessian *fh, bool needKF);
+
   void mappingLoop();
 
   // tracking / mapping synchronization. All protected by [trackMapSyncMutex].

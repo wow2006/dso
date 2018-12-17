@@ -28,11 +28,12 @@
  *      Author: engelj
  */
 
+#include <fstream>
 #include <algorithm>
 
+#include <Eigen/Eigenvalues>
 #include <Eigen/LU>
 #include <Eigen/SVD>
-#include <Eigen/Eigenvalues>
 
 #include "FullSystem/FullSystem.h"
 
@@ -109,14 +110,14 @@ FullSystem::FullSystem() {
                         std::ios::trunc | std::ios::out);
     nullspacesLog->precision(10);
   } else {
-    nullspacesLog = 0;
-    variancesLog = 0;
-    DiagonalLog = 0;
-    eigenALog = 0;
-    eigenPLog = 0;
-    eigenAllLog = 0;
-    numsLog = 0;
-    calibLog = 0;
+    nullspacesLog = nullptr;
+    variancesLog = nullptr;
+    DiagonalLog = nullptr;
+    eigenALog = nullptr;
+    eigenPLog = nullptr;
+    eigenAllLog = nullptr;
+    numsLog = nullptr;
+    calibLog = nullptr;
   }
 
   assert(retstat != 293847);
@@ -189,10 +190,12 @@ FullSystem::~FullSystem() {
 
   delete[] selectionMap;
 
-  for (FrameShell *s : allFrameHistory)
+  for (FrameShell *s : allFrameHistory) {
     delete s;
-  for (FrameHessian *fh : unmappedTrackedFrames)
+  }
+  for (FrameHessian *fh : unmappedTrackedFrames) {
     delete fh;
+  }
 
   delete coarseDistanceMap;
   delete coarseTracker;
@@ -206,8 +209,9 @@ void FullSystem::setOriginalCalib(const VecXf &originalCalib, int originalW,
                                   int originalH) {}
 
 void FullSystem::setGammaFunction(float *BInv) {
-  if (BInv == 0)
+  if (BInv == nullptr) {
     return;
+  }
 
   // copy BInv.
   memcpy(Hcalib.Binv, BInv, sizeof(float) * 256);
@@ -237,11 +241,13 @@ void FullSystem::printResult(std::string file) {
   myfile << std::setprecision(15);
 
   for (FrameShell *s : allFrameHistory) {
-    if (!s->poseValid)
+    if (!s->poseValid) {
       continue;
+    }
 
-    if (setting_onlyLogKFPoses && s->marginalizedAt == s->id)
+    if (setting_onlyLogKFPoses && s->marginalizedAt == s->id) {
       continue;
+    }
 
     myfile << s->timestamp << " " << s->camToWorld.translation().transpose()
            << " " << s->camToWorld.so3().unit_quaternion().x() << " "
@@ -253,21 +259,23 @@ void FullSystem::printResult(std::string file) {
 }
 
 Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
-  assert(allFrameHistory.size() > 0);
+  assert(!allFrameHistory.empty());
   // set pose initialization.
 
-  for (IOWrap::Output3DWrapper *ow : outputWrapper)
+  for (IOWrap::Output3DWrapper *ow : outputWrapper) {
     ow->pushLiveFrame(fh);
+  }
 
   FrameHessian *lastF = coarseTracker->lastRef;
 
   AffLight aff_last_2_l = AffLight(0, 0);
 
   std::vector<SE3, Eigen::aligned_allocator<SE3>> lastF_2_fh_tries;
-  if (allFrameHistory.size() == 2)
-    for (unsigned int i = 0; i < lastF_2_fh_tries.size(); i++)
+  if (allFrameHistory.size() == 2) {
+    for (unsigned int i = 0; i < lastF_2_fh_tries.size(); i++) {
       lastF_2_fh_tries.push_back(SE3());
-  else {
+    }
+  } else {
     FrameShell *slast = allFrameHistory[allFrameHistory.size() - 2];
     FrameShell *sprelast = allFrameHistory[allFrameHistory.size() - 3];
     SE3 slast_2_sprelast;
@@ -450,15 +458,18 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
       for (int i = 0; i < 5; i++) {
         if (!std::isfinite((float)achievedRes[i]) ||
             achievedRes[i] >
-                coarseTracker->lastResiduals[i]) // take over if achievedRes is
-                                                 // either bigger or NAN.
+                coarseTracker
+                    ->lastResiduals[i]) { // take over if achievedRes is
+                                          // either bigger or NAN.
           achievedRes[i] = coarseTracker->lastResiduals[i];
+        }
       }
     }
 
     if (haveOneGood &&
-        achievedRes[0] < lastCoarseRMSE[0] * setting_reTrackThreshold)
+        achievedRes[0] < lastCoarseRMSE[0] * setting_reTrackThreshold) {
       break;
+    }
   }
 
   if (!haveOneGood) {
@@ -478,12 +489,14 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
   fh->shell->camToWorld =
       fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
 
-  if (coarseTracker->firstCoarseRMSE < 0)
+  if (coarseTracker->firstCoarseRMSE < 0) {
     coarseTracker->firstCoarseRMSE = achievedRes[0];
+  }
 
-  if (!setting_debugout_runquiet)
+  if (!setting_debugout_runquiet) {
     printf("Coarse Tracker tracked ab = %f %f (exp %f). Res %f!\n", aff_g2l.a,
            aff_g2l.b, fh->ab_exposure, achievedRes[0]);
+  }
 
   if (setting_logStuff) {
     (*coarseTrackingLog) << std::setprecision(16) << fh->shell->id << " "
@@ -522,30 +535,36 @@ void FullSystem::traceNewCoarse(FrameHessian *fh) {
     for (ImmaturePoint *ph : host->immaturePoints) {
       ph->traceOn(fh, KRKi, Kt, aff, &Hcalib, false);
 
-      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_GOOD)
+      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_GOOD) {
         trace_good++;
-      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_BADCONDITION)
+      }
+      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_BADCONDITION) {
         trace_badcondition++;
-      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_OOB)
+      }
+      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_OOB) {
         trace_oob++;
-      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_OUTLIER)
+      }
+      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_OUTLIER) {
         trace_out++;
-      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_SKIPPED)
+      }
+      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_SKIPPED) {
         trace_skip++;
-      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_UNINITIALIZED)
+      }
+      if (ph->lastTraceStatus == ImmaturePointStatus::IPS_UNINITIALIZED) {
         trace_uninitialized++;
+      }
       trace_total++;
     }
   }
   //	printf("ADD: TRACE: %'d points. %'d (%.0f%%) good. %'d (%.0f%%) skip.
   //%'d (%.0f%%) badcond. %'d (%.0f%%) oob. %'d (%.0f%%) out. %'d (%.0f%%)
-  //uninit.\n", 			trace_total, 			trace_good, 100*trace_good/(float)trace_total,
-  //			trace_skip, 100*trace_skip/(float)trace_total,
-  //			trace_badcondition,
-  //100*trace_badcondition/(float)trace_total, 			trace_oob,
-  //100*trace_oob/(float)trace_total, 			trace_out,
-  //100*trace_out/(float)trace_total, 			trace_uninitialized,
-  //100*trace_uninitialized/(float)trace_total);
+  // uninit.\n", 			trace_total, 			trace_good,
+  // 100*trace_good/(float)trace_total, 			trace_skip,
+  //100*trace_skip/(float)trace_total, 			trace_badcondition,
+  // 100*trace_badcondition/(float)trace_total, trace_oob,
+  // 100*trace_oob/(float)trace_total, 			trace_out,
+  // 100*trace_out/(float)trace_total, 			trace_uninitialized,
+  // 100*trace_uninitialized/(float)trace_total);
 }
 
 void FullSystem::activatePointsMT_Reductor(
@@ -561,32 +580,41 @@ void FullSystem::activatePointsMT_Reductor(
 }
 
 void FullSystem::activatePointsMT() {
-  if (ef->nPoints < setting_desiredPointDensity * 0.66)
+  if (ef->nPoints < setting_desiredPointDensity * 0.66) {
     currentMinActDist -= 0.8;
-  if (ef->nPoints < setting_desiredPointDensity * 0.8)
+  }
+  if (ef->nPoints < setting_desiredPointDensity * 0.8) {
     currentMinActDist -= 0.5;
-  else if (ef->nPoints < setting_desiredPointDensity * 0.9)
+  } else if (ef->nPoints < setting_desiredPointDensity * 0.9) {
     currentMinActDist -= 0.2;
-  else if (ef->nPoints < setting_desiredPointDensity)
+  } else if (ef->nPoints < setting_desiredPointDensity) {
     currentMinActDist -= 0.1;
+  }
 
-  if (ef->nPoints > setting_desiredPointDensity * 1.5)
+  if (ef->nPoints > setting_desiredPointDensity * 1.5) {
     currentMinActDist += 0.8;
-  if (ef->nPoints > setting_desiredPointDensity * 1.3)
+  }
+  if (ef->nPoints > setting_desiredPointDensity * 1.3) {
     currentMinActDist += 0.5;
-  if (ef->nPoints > setting_desiredPointDensity * 1.15)
+  }
+  if (ef->nPoints > setting_desiredPointDensity * 1.15) {
     currentMinActDist += 0.2;
-  if (ef->nPoints > setting_desiredPointDensity)
+  }
+  if (ef->nPoints > setting_desiredPointDensity) {
     currentMinActDist += 0.1;
+  }
 
-  if (currentMinActDist < 0)
+  if (currentMinActDist < 0) {
     currentMinActDist = 0;
-  if (currentMinActDist > 4)
+  }
+  if (currentMinActDist > 4) {
     currentMinActDist = 4;
+  }
 
-  if (!setting_debugout_runquiet)
+  if (!setting_debugout_runquiet) {
     printf("SPARSITY:  MinActDist %f (need %d points, have %d points)!\n",
            currentMinActDist, (int)(setting_desiredPointDensity), ef->nPoints);
+  }
 
   FrameHessian *newestHs = frameHessians.back();
 
@@ -601,8 +629,9 @@ void FullSystem::activatePointsMT() {
 
   for (FrameHessian *host : frameHessians) // go through all active frames
   {
-    if (host == newestHs)
+    if (host == newestHs) {
       continue;
+    }
 
     SE3 fhToNew = newestHs->PRE_worldToCam * host->PRE_camToWorld;
     Mat33f KRKi =
@@ -621,7 +650,7 @@ void FullSystem::activatePointsMT() {
         //				immature_invalid_deleted++;
         // remove point.
         delete ph;
-        host->immaturePoints[i] = 0;
+        host->immaturePoints[i] = nullptr;
         continue;
       }
 
@@ -641,7 +670,7 @@ void FullSystem::activatePointsMT() {
             ph->lastTraceStatus == IPS_OOB) {
           //					immature_notReady_deleted++;
           delete ph;
-          host->immaturePoints[i] = 0;
+          host->immaturePoints[i] = nullptr;
         }
         //				immature_notReady_skipped++;
         continue;
@@ -664,51 +693,53 @@ void FullSystem::activatePointsMT() {
         }
       } else {
         delete ph;
-        host->immaturePoints[i] = 0;
+        host->immaturePoints[i] = nullptr;
       }
     }
   }
 
   //	printf("ACTIVATE: %d. (del %d, notReady %d, marg %d, good %d, marg-skip
-  //%d)\n", 			(int)toOptimize.size(), immature_deleted, immature_notReady,
-  //immature_needMarg, immature_want, immature_margskip);
+  //%d)\n", 			(int)toOptimize.size(), immature_deleted,
+  //immature_notReady, immature_needMarg, immature_want, immature_margskip);
 
   std::vector<PointHessian *> optimized;
   optimized.resize(toOptimize.size());
 
-  if (multiThreading)
+  if (multiThreading) {
     treadReduce.reduce(boost::bind(&FullSystem::activatePointsMT_Reductor, this,
                                    &optimized, &toOptimize, _1, _2, _3, _4),
                        0, toOptimize.size(), 50);
 
-  else
-    activatePointsMT_Reductor(&optimized, &toOptimize, 0, toOptimize.size(), 0,
-                              0);
+  } else {
+    activatePointsMT_Reductor(&optimized, &toOptimize, 0, toOptimize.size(),
+                              nullptr, 0);
+  }
 
   for (unsigned k = 0; k < toOptimize.size(); k++) {
     PointHessian *newpoint = optimized[k];
     ImmaturePoint *ph = toOptimize[k];
 
-    if (newpoint != 0 && newpoint != (PointHessian *)((long)(-1))) {
-      newpoint->host->immaturePoints[ph->idxInImmaturePoints] = 0;
+    if (newpoint != nullptr && newpoint != (PointHessian *)((long)(-1))) {
+      newpoint->host->immaturePoints[ph->idxInImmaturePoints] = nullptr;
       newpoint->host->pointHessians.push_back(newpoint);
       ef->insertPoint(newpoint);
-      for (PointFrameResidual *r : newpoint->residuals)
+      for (PointFrameResidual *r : newpoint->residuals) {
         ef->insertResidual(r);
-      assert(newpoint->efPoint != 0);
+      }
+      assert(newpoint->efPoint != nullptr);
       delete ph;
     } else if (newpoint == (PointHessian *)((long)(-1)) ||
                ph->lastTraceStatus == IPS_OOB) {
       delete ph;
-      ph->host->immaturePoints[ph->idxInImmaturePoints] = 0;
+      ph->host->immaturePoints[ph->idxInImmaturePoints] = nullptr;
     } else {
-      assert(newpoint == 0 || newpoint == (PointHessian *)((long)(-1)));
+      assert(newpoint == nullptr || newpoint == (PointHessian *)((long)(-1)));
     }
   }
 
   for (FrameHessian *host : frameHessians) {
     for (int i = 0; i < (int)host->immaturePoints.size(); i++) {
-      if (host->immaturePoints[i] == 0) {
+      if (host->immaturePoints[i] == nullptr) {
         host->immaturePoints[i] = host->immaturePoints.back();
         host->immaturePoints.pop_back();
         i--;
@@ -728,13 +759,17 @@ void FullSystem::flagPointsForRemoval() {
   // if(setting_margPointVisWindow>0)
   {
     for (int i = ((int)frameHessians.size()) - 1;
-         i >= 0 && i >= ((int)frameHessians.size()); i--)
-      if (!frameHessians[i]->flaggedForMarginalization)
+         i >= 0 && i >= ((int)frameHessians.size()); i--) {
+      if (!frameHessians[i]->flaggedForMarginalization) {
         fhsToKeepPoints.push_back(frameHessians[i]);
+      }
+    }
 
-    for (int i = 0; i < (int)frameHessians.size(); i++)
-      if (frameHessians[i]->flaggedForMarginalization)
+    for (int i = 0; i < (int)frameHessians.size(); i++) {
+      if (frameHessians[i]->flaggedForMarginalization) {
         fhsToMargPoints.push_back(frameHessians[i]);
+      }
+    }
   }
 
   // ef->setAdjointsF();
@@ -745,13 +780,14 @@ void FullSystem::flagPointsForRemoval() {
   {
     for (unsigned int i = 0; i < host->pointHessians.size(); i++) {
       PointHessian *ph = host->pointHessians[i];
-      if (ph == 0)
+      if (ph == nullptr) {
         continue;
+      }
 
-      if (ph->idepth_scaled < 0 || ph->residuals.size() == 0) {
+      if (ph->idepth_scaled < 0 || ph->residuals.empty()) {
         host->pointHessiansOut.push_back(ph);
         ph->efPoint->stateFlag = EFPointStatus::PS_DROP;
-        host->pointHessians[i] = 0;
+        host->pointHessians[i] = nullptr;
         flag_nores++;
       } else if (ph->isOOB(fhsToKeepPoints, fhsToMargPoints) ||
                  host->flaggedForMarginalization) {
@@ -786,12 +822,12 @@ void FullSystem::flagPointsForRemoval() {
           // ph->host->idx, ph->numGoodResiduals, (int)ph->residuals.size());
         }
 
-        host->pointHessians[i] = 0;
+        host->pointHessians[i] = nullptr;
       }
     }
 
     for (int i = 0; i < (int)host->pointHessians.size(); i++) {
-      if (host->pointHessians[i] == 0) {
+      if (host->pointHessians[i] == nullptr) {
         host->pointHessians[i] = host->pointHessians.back();
         host->pointHessians.pop_back();
         i--;
@@ -801,8 +837,9 @@ void FullSystem::flagPointsForRemoval() {
 }
 
 void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
-  if (isLost)
+  if (isLost) {
     return;
+  }
   boost::unique_lock<boost::mutex> lock(trackMutex);
 
   // =========================== add into allFrameHistory
@@ -842,57 +879,57 @@ void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
       delete fh;
     }
     return;
-  } else // do front-end operation.
-  {
-    // =========================== SWAP tracking reference?.
-    // =========================
-    if (coarseTracker_forNewKF->refFrameID > coarseTracker->refFrameID) {
-      boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
-      CoarseTracker *tmp = coarseTracker;
-      coarseTracker = coarseTracker_forNewKF;
-      coarseTracker_forNewKF = tmp;
-    }
+  } // do front-end operation.
 
-    Vec4 tres = trackNewCoarse(fh);
-    if (!std::isfinite((double)tres[0]) || !std::isfinite((double)tres[1]) ||
-        !std::isfinite((double)tres[2]) || !std::isfinite((double)tres[3])) {
-      printf("Initial Tracking failed: LOST!\n");
-      isLost = true;
-      return;
-    }
+  // =========================== SWAP tracking reference?.
+  // =========================
+  if (coarseTracker_forNewKF->refFrameID > coarseTracker->refFrameID) {
+    boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
+    CoarseTracker *tmp = coarseTracker;
+    coarseTracker = coarseTracker_forNewKF;
+    coarseTracker_forNewKF = tmp;
+  }
 
-    bool needToMakeKF = false;
-    if (setting_keyframesPerSecond > 0) {
-      needToMakeKF =
-          allFrameHistory.size() == 1 ||
-          (fh->shell->timestamp - allKeyFramesHistory.back()->timestamp) >
-              0.95f / setting_keyframesPerSecond;
-    } else {
-      Vec2 refToFh = AffLight::fromToVecExposure(
-          coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
-          coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
-
-      // BRIGHTNESS CHECK
-      needToMakeKF = allFrameHistory.size() == 1 ||
-                     setting_kfGlobalWeight * setting_maxShiftWeightT *
-                                 sqrtf((double)tres[1]) / (wG[0] + hG[0]) +
-                             setting_kfGlobalWeight * setting_maxShiftWeightR *
-                                 sqrtf((double)tres[2]) / (wG[0] + hG[0]) +
-                             setting_kfGlobalWeight * setting_maxShiftWeightRT *
-                                 sqrtf((double)tres[3]) / (wG[0] + hG[0]) +
-                             setting_kfGlobalWeight * setting_maxAffineWeight *
-                                 fabs(logf((float)refToFh[0])) >
-                         1 ||
-                     2 * coarseTracker->firstCoarseRMSE < tres[0];
-    }
-
-    for (IOWrap::Output3DWrapper *ow : outputWrapper)
-      ow->publishCamPose(fh->shell, &Hcalib);
-
-    lock.unlock();
-    deliverTrackedFrame(fh, needToMakeKF);
+  Vec4 tres = trackNewCoarse(fh);
+  if (!std::isfinite((double)tres[0]) || !std::isfinite((double)tres[1]) ||
+      !std::isfinite((double)tres[2]) || !std::isfinite((double)tres[3])) {
+    printf("Initial Tracking failed: LOST!\n");
+    isLost = true;
     return;
   }
+
+  bool needToMakeKF = false;
+  if (setting_keyframesPerSecond > 0) {
+    needToMakeKF =
+        allFrameHistory.size() == 1 ||
+        (fh->shell->timestamp - allKeyFramesHistory.back()->timestamp) >
+            0.95f / setting_keyframesPerSecond;
+  } else {
+    Vec2 refToFh = AffLight::fromToVecExposure(
+        coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
+        coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
+
+    // BRIGHTNESS CHECK
+    needToMakeKF = allFrameHistory.size() == 1 ||
+                   setting_kfGlobalWeight * setting_maxShiftWeightT *
+                               sqrtf((double)tres[1]) / (wG[0] + hG[0]) +
+                           setting_kfGlobalWeight * setting_maxShiftWeightR *
+                               sqrtf((double)tres[2]) / (wG[0] + hG[0]) +
+                           setting_kfGlobalWeight * setting_maxShiftWeightRT *
+                               sqrtf((double)tres[3]) / (wG[0] + hG[0]) +
+                           setting_kfGlobalWeight * setting_maxAffineWeight *
+                               fabs(logf((float)refToFh[0])) >
+                       1 ||
+                   2 * coarseTracker->firstCoarseRMSE < tres[0];
+  }
+
+  for (IOWrap::Output3DWrapper *ow : outputWrapper) {
+    ow->publishCamPose(fh->shell, &Hcalib);
+  }
+
+  lock.unlock();
+  deliverTrackedFrame(fh, needToMakeKF);
+  return;
 }
 
 void FullSystem::deliverTrackedFrame(FrameHessian *fh, bool needKF) {
@@ -902,23 +939,27 @@ void FullSystem::deliverTrackedFrame(FrameHessian *fh, bool needKF) {
       IOWrap::displayImage("frameToTrack", &img);
       while (true) {
         char k = IOWrap::waitKey(0);
-        if (k == ' ')
+        if (k == ' ') {
           break;
+        }
         handleKey(k);
       }
       lastRefStopID = coarseTracker->refFrameID;
-    } else
+    } else {
       handleKey(IOWrap::waitKey(1));
+    }
 
-    if (needKF)
+    if (needKF) {
       makeKeyFrame(fh);
-    else
+    } else {
       makeNonKeyFrame(fh);
+    }
   } else {
     boost::unique_lock<boost::mutex> lock(trackMapSyncMutex);
     unmappedTrackedFrames.push_back(fh);
-    if (needKF)
+    if (needKF) {
       needNewKFAfter = fh->shell->trackingRef->id;
+    }
     trackedFrameSignal.notify_all();
 
     while (coarseTracker_forNewKF->refFrameID == -1 &&
@@ -934,10 +975,11 @@ void FullSystem::mappingLoop() {
   boost::unique_lock<boost::mutex> lock(trackMapSyncMutex);
 
   while (runMapping) {
-    while (unmappedTrackedFrames.size() == 0) {
+    while (unmappedTrackedFrames.empty()) {
       trackedFrameSignal.wait(lock);
-      if (!runMapping)
+      if (!runMapping) {
         return;
+      }
     }
 
     FrameHessian *fh = unmappedTrackedFrames.front();
@@ -952,22 +994,23 @@ void FullSystem::mappingLoop() {
       continue;
     }
 
-    if (unmappedTrackedFrames.size() > 3)
+    if (unmappedTrackedFrames.size() > 3) {
       needToKetchupMapping = true;
+    }
 
-    if (unmappedTrackedFrames.size() >
-        0) // if there are other frames to tracke, do that first.
+    if (!unmappedTrackedFrames
+             .empty()) // if there are other frames to tracke, do that first.
     {
       lock.unlock();
       makeNonKeyFrame(fh);
       lock.lock();
 
-      if (needToKetchupMapping && unmappedTrackedFrames.size() > 0) {
+      if (needToKetchupMapping && !unmappedTrackedFrames.empty()) {
         FrameHessian *fh = unmappedTrackedFrames.front();
         unmappedTrackedFrames.pop_front();
         {
           boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
-          assert(fh->shell->trackingRef != 0);
+          assert(fh->shell->trackingRef != nullptr);
           fh->shell->camToWorld =
               fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
           fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(),
@@ -1008,7 +1051,7 @@ void FullSystem::makeNonKeyFrame(FrameHessian *fh) {
   // thread.
   {
     boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
-    assert(fh->shell->trackingRef != 0);
+    assert(fh->shell->trackingRef != nullptr);
     fh->shell->camToWorld =
         fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
     fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
@@ -1022,7 +1065,7 @@ void FullSystem::makeKeyFrame(FrameHessian *fh) {
   // needs to be set by mapping thread
   {
     boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
-    assert(fh->shell->trackingRef != 0);
+    assert(fh->shell->trackingRef != nullptr);
     fh->shell->camToWorld =
         fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
     fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
@@ -1051,8 +1094,9 @@ void FullSystem::makeKeyFrame(FrameHessian *fh) {
   int numFwdResAdde = 0;
   for (FrameHessian *fh1 : frameHessians) // go through all active frames
   {
-    if (fh1 == fh)
+    if (fh1 == fh) {
       continue;
+    }
     for (PointHessian *ph : fh1->pointHessians) {
       PointFrameResidual *r = new PointFrameResidual(ph, fh1, fh);
       r->setState(ResState::IN);
@@ -1095,8 +1139,9 @@ void FullSystem::makeKeyFrame(FrameHessian *fh) {
     }
   }
 
-  if (isLost)
+  if (isLost) {
     return;
+  }
 
   // =========================== REMOVE OUTLIER =========================
   removeOutliers();
@@ -1123,7 +1168,7 @@ void FullSystem::makeKeyFrame(FrameHessian *fh) {
 
   // =========================== add new Immature points & new residuals
   // =========================
-  makeNewTraces(fh, 0);
+  makeNewTraces(fh, nullptr);
 
   for (IOWrap::Output3DWrapper *ow : outputWrapper) {
     ow->publishGraph(ef->connectivityMap);
@@ -1132,11 +1177,12 @@ void FullSystem::makeKeyFrame(FrameHessian *fh) {
 
   // =========================== Marginalize Frames =========================
 
-  for (unsigned int i = 0; i < frameHessians.size(); i++)
+  for (unsigned int i = 0; i < frameHessians.size(); i++) {
     if (frameHessians[i]->flaggedForMarginalization) {
       marginalizeFrame(frameHessians[i]);
       i = 0;
     }
+  }
 
   printLogLine();
   // printEigenValLine();
@@ -1174,14 +1220,16 @@ void FullSystem::initializeFromInitializer(FrameHessian *newFrame) {
   float keepPercentage =
       setting_desiredPointDensity / coarseInitializer->numPoints[0];
 
-  if (!setting_debugout_runquiet)
+  if (!setting_debugout_runquiet) {
     printf("Initialization: keep %.1f%% (need %d, have %d)!\n",
            100 * keepPercentage, (int)(setting_desiredPointDensity),
            coarseInitializer->numPoints[0]);
+  }
 
   for (int i = 0; i < coarseInitializer->numPoints[0]; i++) {
-    if (rand() / (float)RAND_MAX > keepPercentage)
+    if (rand() / (float)RAND_MAX > keepPercentage) {
       continue;
+    }
 
     Pnt *point = coarseInitializer->points[0] + i;
     ImmaturePoint *pt = new ImmaturePoint(point->u + 0.5f, point->v + 0.5f,
@@ -1219,7 +1267,7 @@ void FullSystem::initializeFromInitializer(FrameHessian *newFrame) {
     firstFrame->shell->aff_g2l = AffLight(0, 0);
     firstFrame->setEvalPT_scaled(firstFrame->shell->camToWorld.inverse(),
                                  firstFrame->shell->aff_g2l);
-    firstFrame->shell->trackingRef = 0;
+    firstFrame->shell->trackingRef = nullptr;
     firstFrame->shell->camToTrackingRef = SE3();
 
     newFrame->shell->camToWorld = firstToNew.inverse();
@@ -1247,37 +1295,41 @@ void FullSystem::makeNewTraces(FrameHessian *newFrame, float *gtDepth) {
   newFrame->pointHessiansMarginalized.reserve(numPointsTotal * 1.2f);
   newFrame->pointHessiansOut.reserve(numPointsTotal * 1.2f);
 
-  for (int y = patternPadding + 1; y < hG[0] - patternPadding - 2; y++)
+  for (int y = patternPadding + 1; y < hG[0] - patternPadding - 2; y++) {
     for (int x = patternPadding + 1; x < wG[0] - patternPadding - 2; x++) {
       int i = x + y * wG[0];
-      if (selectionMap[i] == 0)
+      if (selectionMap[i] == 0) {
         continue;
+      }
 
-      ImmaturePoint *impt =
-          new ImmaturePoint(x, y, newFrame, selectionMap[i], &Hcalib);
-      if (!std::isfinite(impt->energyTH))
+      auto impt = new ImmaturePoint(x, y, newFrame, selectionMap[i], &Hcalib);
+      if (!std::isfinite(impt->energyTH)) {
         delete impt;
-      else
+      } else {
         newFrame->immaturePoints.push_back(impt);
+      }
     }
+  }
   // printf("MADE %d IMMATURE POINTS!\n", (int)newFrame->immaturePoints.size());
 }
 
 void FullSystem::setPrecalcValues() {
-  for (FrameHessian *fh : frameHessians) {
+  for (auto fh : frameHessians) {
     fh->targetPrecalc.resize(frameHessians.size());
-    for (unsigned int i = 0; i < frameHessians.size(); i++)
+    for (unsigned int i = 0; i < frameHessians.size(); i++) {
       fh->targetPrecalc[i].set(fh, frameHessians[i], &Hcalib);
+    }
   }
 
   ef->setDeltaF(&Hcalib);
 }
 
 void FullSystem::printLogLine() {
-  if (frameHessians.size() == 0)
+  if (frameHessians.empty()) {
     return;
+  }
 
-  if (!setting_debugout_runquiet)
+  if (!setting_debugout_runquiet) {
     printf("LOG %d: %.3f fine. Res: %d A, %d L, %d M; (%'d / %'d) forceDrop. "
            "a=%f, b=%f. Window %d (%d)\n",
            allKeyFramesHistory.back()->id, statistics_lastFineTrackRMSE,
@@ -1288,11 +1340,13 @@ void FullSystem::printLogLine() {
            allKeyFramesHistory.back()->aff_g2l.b,
            frameHessians.back()->shell->id - frameHessians.front()->shell->id,
            (int)frameHessians.size());
+  }
 
-  if (!setting_logStuff)
+  if (!setting_logStuff) {
     return;
+  }
 
-  if (numsLog != 0) {
+  if (numsLog != nullptr) {
     (*numsLog) << allKeyFramesHistory.back()->id << " "
                << statistics_lastFineTrackRMSE << " "
                << (int)statistics_numCreatedPoints << " "
@@ -1314,10 +1368,13 @@ void FullSystem::printLogLine() {
 }
 
 void FullSystem::printEigenValLine() {
-  if (!setting_logStuff)
+  if (!setting_logStuff) {
     return;
-  if (ef->lastHS.rows() < 12)
+  }
+
+  if (ef->lastHS.rows() < 12) {
     return;
+  }
 
   MatXX Hp = ef->lastHS.bottomRightCorner(ef->lastHS.cols() - CPARS,
                                           ef->lastHS.cols() - CPARS);
@@ -1334,6 +1391,7 @@ void FullSystem::printEigenValLine() {
     MatXX tmp2 = Ha.block(i * 8 + 6, 0, 2, n * 8);
     Ha.block(i * 2, 0, 2, n * 8) = tmp2;
   }
+
   for (int i = 0; i < n; i++) {
     MatXX tmp6 = Hp.block(0, i * 8, n * 8, 6);
     Hp.block(0, i * 6, n * 8, 6) = tmp6;
@@ -1343,9 +1401,9 @@ void FullSystem::printEigenValLine() {
   }
 
   VecX eigenvaluesAll = ef->lastHS.eigenvalues().real();
-  VecX eigenP = Hp.topLeftCorner(n * 6, n * 6).eigenvalues().real();
-  VecX eigenA = Ha.topLeftCorner(n * 2, n * 2).eigenvalues().real();
-  VecX diagonal = ef->lastHS.diagonal();
+  VecX eigenP         = Hp.topLeftCorner(n * 6, n * 6).eigenvalues().real();
+  VecX eigenA         = Ha.topLeftCorner(n * 2, n * 2).eigenvalues().real();
+  VecX diagonal       = ef->lastHS.diagonal();
 
   std::sort(eigenvaluesAll.data(),
             eigenvaluesAll.data() + eigenvaluesAll.size());
@@ -1354,21 +1412,23 @@ void FullSystem::printEigenValLine() {
 
   int nz = std::max(100, setting_maxFrames * 10);
 
-  if (eigenAllLog != 0) {
+  if (eigenAllLog != nullptr) {
     VecX ea = VecX::Zero(nz);
     ea.head(eigenvaluesAll.size()) = eigenvaluesAll;
     (*eigenAllLog) << allKeyFramesHistory.back()->id << " " << ea.transpose()
                    << "\n";
     eigenAllLog->flush();
   }
-  if (eigenALog != 0) {
+
+  if (eigenALog != nullptr) {
     VecX ea = VecX::Zero(nz);
     ea.head(eigenA.size()) = eigenA;
     (*eigenALog) << allKeyFramesHistory.back()->id << " " << ea.transpose()
                  << "\n";
     eigenALog->flush();
   }
-  if (eigenPLog != 0) {
+
+  if (eigenPLog != nullptr) {
     VecX ea = VecX::Zero(nz);
     ea.head(eigenP.size()) = eigenP;
     (*eigenPLog) << allKeyFramesHistory.back()->id << " " << ea.transpose()
@@ -1376,7 +1436,7 @@ void FullSystem::printEigenValLine() {
     eigenPLog->flush();
   }
 
-  if (DiagonalLog != 0) {
+  if (DiagonalLog != nullptr) {
     VecX ea = VecX::Zero(nz);
     ea.head(diagonal.size()) = diagonal;
     (*DiagonalLog) << allKeyFramesHistory.back()->id << " " << ea.transpose()
@@ -1384,7 +1444,7 @@ void FullSystem::printEigenValLine() {
     DiagonalLog->flush();
   }
 
-  if (variancesLog != 0) {
+  if (variancesLog != nullptr) {
     VecX ea = VecX::Zero(nz);
     ea.head(diagonal.size()) = ef->lastHS.inverse().diagonal();
     (*variancesLog) << allKeyFramesHistory.back()->id << " " << ea.transpose()
@@ -1394,35 +1454,36 @@ void FullSystem::printEigenValLine() {
 
   std::vector<VecX> &nsp = ef->lastNullspaces_forLogging;
   (*nullspacesLog) << allKeyFramesHistory.back()->id << " ";
-  for (unsigned int i = 0; i < nsp.size(); i++)
+  for (unsigned int i = 0; i < nsp.size(); i++) {
     (*nullspacesLog) << nsp[i].dot(ef->lastHS * nsp[i]) << " "
                      << nsp[i].dot(ef->lastbS) << " ";
+  }
   (*nullspacesLog) << "\n";
   nullspacesLog->flush();
 }
 
 void FullSystem::printFrameLifetimes() {
-  if (!setting_logStuff)
+  if (!setting_logStuff) {
     return;
+  }
 
   boost::unique_lock<boost::mutex> lock(trackMutex);
 
-  std::ofstream *lg = new std::ofstream();
-  lg->open("logs/lifetimeLog.txt", std::ios::trunc | std::ios::out);
-  lg->precision(15);
+  std::ofstream lg;
+  lg.open("logs/lifetimeLog.txt", std::ios::trunc | std::ios::out);
+  lg.precision(15);
 
   for (FrameShell *s : allFrameHistory) {
-    (*lg) << s->id << " " << s->marginalizedAt << " "
+    lg << s->id << " " << s->marginalizedAt << " "
           << s->statistics_goodResOnThis << " "
           << s->statistics_outlierResOnThis << " " << s->movedByOpt;
 
-    (*lg) << "\n";
+    lg << "\n";
   }
 
-  lg->close();
-  delete lg;
+  lg.close();
 }
 
-void FullSystem::printEvalLine() { return; }
+void FullSystem::printEvalLine() {}
 
 } // namespace dso
