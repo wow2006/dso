@@ -99,7 +99,7 @@ add_executable(
 target_link_libraries(
   dso_dataset
   PUBLIC
-  #dso
+  dso
   #${Pangolin_LIBRARIES}
   Boost::program_options
 )

@@ -1,7 +1,10 @@
-#include <string>
-#include <iostream>
+#include <memory>   // std::make_unique
+#include <string>   // std::string
+#include <iostream> // std::{cout,cerr}
 
-#include <boost/program_options.hpp>
+#include <boost/program_options.hpp> // @function parseConfig
+
+#include "FullSystem/FullSystem.h"
 
 
 struct Config {
@@ -52,5 +55,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  auto pFullSystem = std::make_unique<dso::FullSystem>();
+
   return 0;
 }
+
