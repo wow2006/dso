@@ -91,7 +91,7 @@ target_compile_features(
 target_compile_options(
   dso
   PUBLIC
-  $<$<CXX_COMPILER_ID:Clang>:-Weverything -Wno-c++98-compat-pedantic>
+  $<$<CXX_COMPILER_ID:Clang>:-Weverything -Wno-c++98-compat-pedantic -fcolor-diagnostics>
   $<$<CXX_COMPILER_ID:GNU>:-Wall -W>
 )
 # ===========================================

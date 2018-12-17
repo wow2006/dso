@@ -38,7 +38,7 @@ bool Config::parseConfig(int argc, char* argv[]) {
       store(parse_command_line(argc, argv, desc), vm);
       notify(vm);
 
-      if (vm.count("help")) {
+      if (vm.count("help") != 0u) {
         std::cout << desc << '\n';
         return false;
       }
@@ -76,9 +76,6 @@ int main(int argc, char* argv[]) {
       auto pImage = pReader->getImage(i);
 
       pFullSystem->addActiveFrame(pImage, i);
-
-      printf("\r%d / %d", i, pReader->getNumImages());
-      fflush(stdout);
 
       delete pImage;
     }
