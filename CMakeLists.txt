@@ -92,14 +92,15 @@ target_compile_options(
 # DEMO
 add_executable(
   dso_dataset
-  ${CMAKE_SOURCE_DIR}/src/main_dso_pangolin.cpp
+  #${CMAKE_SOURCE_DIR}/src/main_dso_pangolin.cpp
+  ${CMAKE_SOURCE_DIR}/main.cpp
 )
 
 target_link_libraries(
   dso_dataset
   PUBLIC
-  dso
-  ${Pangolin_LIBRARIES}
+  #dso
+  #${Pangolin_LIBRARIES}
   Boost::program_options
 )
 # ===========================================
