@@ -1,9 +1,11 @@
 #include <memory>   // std::make_unique
+#include <thread>   // std::thread
 #include <string>   // std::string
 #include <iostream> // std::{cout,cerr}
 
 #include <boost/program_options.hpp> // @function parseConfig
 
+#include "util/DatasetReader.h"
 #include "FullSystem/FullSystem.h"
 
 
@@ -55,7 +57,31 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  auto pFullSystem = std::make_unique<dso::FullSystem>();
+  std::thread runthread([&]() {
+    auto pReader = std::make_unique<ImageFolderReader>(g_pConfig->m_sImagesPath,
+                                                       g_pConfig->m_sCalibPath,
+                                                       "", "");
+    pReader->setGlobalCalibration();
+
+    auto pFullSystem = std::make_unique<dso::FullSystem>();
+    pFullSystem->setGammaFunction(pReader->getPhotometricGamma());
+    pFullSystem->linearizeOperation = true;
+
+    for(int i = 0; i < pReader->getNumImages(); ++i) {
+      auto pImage = pReader->getImage(i);
+
+      pFullSystem->addActiveFrame(pImage, i);
+
+      printf("\r%d / %d", i, pReader->getNumImages());
+      fflush(stdout);
+
+      delete pImage;
+    }
+
+    pFullSystem->blockUntilMappingIsFinished();
+  });
+
+  runthread.join();
 
   return 0;
 }
