@@ -27,6 +27,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <boost/thread.hpp>
+#include <boost/filesystem.hpp>
+
 #include "util/globalCalib.h"
 #include "util/globalFuncs.h"
 #include "util/settings.h"
@@ -38,7 +41,6 @@
 #include "zip.h"
 #endif
 
-#include <boost/thread.hpp>
 
 using namespace dso;
 
@@ -54,30 +56,24 @@ enum DirectoryReturn {
  * @param files vector of string of files found in directory
  *
  * @return number of files found in directory
+ *         @see DirectoryReturn
  */
 inline int getdir(std::string dir, std::vector<std::string> &files) {
-  DIR *dp;
-  struct dirent *dirp;
-  if ((dp = opendir(dir.c_str())) == NULL) {
-    return -1;
+  namespace fs = boost::filesystem;
+
+  if(dir.empty() || !fs::is_directory(dir)) {
+    return NotExist;
   }
 
-  while ((dirp = readdir(dp)) != NULL) {
-    std::string name = std::string(dirp->d_name);
+  const auto directory = fs::path{dir};
 
-    if (name != "." && name != "..")
-      files.push_back(name);
-  }
-  closedir(dp);
-
-  std::sort(files.begin(), files.end());
-
-  if (dir.at(dir.length() - 1) != '/')
-    dir = dir + "/";
-  for (unsigned int i = 0; i < files.size(); i++) {
-    if (files[i].at(0) != '/')
-      files[i] = dir + files[i];
-  }
+  fs::directory_iterator filesIterators{directory};
+  fs::directory_iterator filesIteratorsEnd;
+  
+  std::transform(filesIterators, filesIteratorsEnd,
+      std::back_inserter(files), [](const fs::directory_entry& entry) {
+        return entry.path().string();
+      });
 
   return files.size();
 }
