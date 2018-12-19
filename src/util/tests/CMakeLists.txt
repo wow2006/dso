@@ -1,0 +1,37 @@
+get_target_property(
+  CATCH_INCLUDE_DIRECTORY
+  Catch
+  INTERFACE_INCLUDE_DIRECTORIES
+)
+
+add_library(
+  tests-main
+  OBJECT
+  tests-main.cpp
+)
+
+target_compile_features(
+  tests-main
+  PUBLIC
+  cxx_std_17
+)
+
+target_include_directories(
+  tests-main
+  PUBLIC
+  ${CATCH_INCLUDE_DIRECTORY}
+)
+
+add_executable(
+  testDatasetReader
+  testDatasetReader.cpp
+  $<TARGET_OBJECTS:tests-main>
+)
+
+target_link_libraries(
+  testDatasetReader
+  PUBLIC
+  Catch
+  dso
+)
+

@@ -15,11 +15,12 @@ set(CMAKE_CXX_FLAGS
 #   "${SSE_FLAGS} -O3 -g -std=c++0x -fno-omit-frame-pointer"
 )
 
+option(ENABLE_TESTING "" ON)
 
 # required libraries
 find_package(SuiteParse REQUIRED)
 find_package(Eigen3     REQUIRED)
-find_package(Boost      COMPONENTS system thread program_options)
+find_package(Boost      COMPONENTS system thread program_options filesystem)
 find_package(Pangolin   REQUIRED)
 find_package(OpenCV     REQUIRED imgcodecs highgui)
 
@@ -81,6 +82,7 @@ target_link_libraries(
   PUBLIC
   Eigen3::Eigen
   Boost::thread
+  Boost::filesystem
   ${OpenCV_LIBS}
 )
 
@@ -113,7 +115,6 @@ target_link_libraries(
 )
 # ===========================================
 
-
 add_executable(
   dso_DEMO
   ${CMAKE_SOURCE_DIR}/main.cpp
@@ -126,3 +127,11 @@ target_link_libraries(
   ${Pangolin_LIBRARIES}
   Boost::program_options
 )
+
+if(ENABLE_TESTING)
+  find_package(Catch REQUIRED)
+
+  enable_testing()
+
+  add_subdirectory(${CMAKE_SOURCE_DIR}/src/util/tests)
+endif()
