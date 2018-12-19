@@ -42,6 +42,11 @@
 
 using namespace dso;
 
+enum DirectoryReturn {
+  NotExist = -1,
+  Empty    = 0
+};
+
 /**
  * @brief read files names in directory
  *
