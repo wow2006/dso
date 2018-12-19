@@ -11,10 +11,17 @@
 
 
 TEST_CASE( "Pass non existing directory", "[getdir]" ) {
-  const std::string nonExistingDirectory = "";
+  const std::string nonExistingDirectory = "/shit";
   std::vector<std::string> files;
 
   REQUIRE(getdir(nonExistingDirectory, files) == -1);
+}
+
+TEST_CASE( "Pass Empty string", "[getdir]" ) {
+  const std::string emptyString;
+  std::vector<std::string> files;
+
+  REQUIRE(getdir(emptyString, files) == -1);
 }
 
 TEST_CASE( "Pass Empty directory", "[getdir]" ) {
