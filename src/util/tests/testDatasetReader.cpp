@@ -95,7 +95,6 @@ TEST_CASE("pass path to zip file and ZIPLIB not exist", "[ImageFolderReader]" ) 
   }());
 }
 
-/*
 TEST_CASE("pass empty directory", "[ImageFolderReader]" ) {
   const std::string imagesDir    = "";
   const std::string calibFile    = "";
@@ -106,6 +105,5 @@ TEST_CASE("pass empty directory", "[ImageFolderReader]" ) {
     ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile, vignetteFile);
   }());
 }
-*/
 
 /// }

@@ -151,86 +151,86 @@ class ImageFolderReader {
 #else
       throw std::runtime_error("ERROR: cannot read .zip archive, as compile without ziplib!");
 #endif
-      } else {
-        if(getdir(path, files) > 0) {
-          throw std::runtime_error("Can not found images");
-        }
+    } else {
+      if(getdir(path, files) <= 0) {
+        throw std::runtime_error("Can not found images");
       }
-
-      undistort =
-          Undistort::getUndistorterForFile(calibfile, gammaFile, vignetteFile);
-
-      widthOrg = undistort->getOriginalSize()[0];
-      heightOrg = undistort->getOriginalSize()[1];
-      width = undistort->getSize()[0];
-      height = undistort->getSize()[1];
-
-      // load timestamps if possible.
-      loadTimestamps();
-      std::cout << "ImageFolderReader: got " << files.size() << " files in "
-                << path.c_str() << '\n';
     }
 
-    ~ImageFolderReader() {
+    undistort =
+        Undistort::getUndistorterForFile(calibfile, gammaFile, vignetteFile);
+
+    widthOrg  = undistort->getOriginalSize()[0];
+    heightOrg = undistort->getOriginalSize()[1];
+    width     = undistort->getSize()[0];
+    height    = undistort->getSize()[1];
+
+    // load timestamps if possible.
+    loadTimestamps();
+    std::cout << "ImageFolderReader: got " << files.size() << " files in "
+              << path.c_str() << '\n';
+  }
+
+  ~ImageFolderReader() {
 #if HAS_ZIPLIB
-      if (ziparchive != 0)
-        zip_close(ziparchive);
-      if (databuffer != 0)
-        delete databuffer;
+    if (ziparchive != 0)
+      zip_close(ziparchive);
+    if (databuffer != 0)
+      delete databuffer;
 #endif
 
-      delete undistort;
-    };
+    delete undistort;
+  };
 
-    Eigen::VectorXf getOriginalCalib() {
-      return undistort->getOriginalParameter().cast<float>();
-    }
+  Eigen::VectorXf getOriginalCalib() {
+    return undistort->getOriginalParameter().cast<float>();
+  }
 
-    Eigen::Vector2i getOriginalDimensions() {
-      return undistort->getOriginalSize();
-    }
+  Eigen::Vector2i getOriginalDimensions() {
+    return undistort->getOriginalSize();
+  }
 
-    void getCalibMono(Eigen::Matrix3f &K, int &w, int &h) {
-      K = undistort->getK().cast<float>();
-      w = undistort->getSize()[0];
-      h = undistort->getSize()[1];
-    }
+  void getCalibMono(Eigen::Matrix3f &K, int &w, int &h) {
+    K = undistort->getK().cast<float>();
+    w = undistort->getSize()[0];
+    h = undistort->getSize()[1];
+  }
 
-    void setGlobalCalibration() {
-      int w_out, h_out;
-      Eigen::Matrix3f K;
-      getCalibMono(K, w_out, h_out);
-      setGlobalCalib(w_out, h_out, K);
-    }
+  void setGlobalCalibration() {
+    int w_out, h_out;
+    Eigen::Matrix3f K;
+    getCalibMono(K, w_out, h_out);
+    setGlobalCalib(w_out, h_out, K);
+  }
 
-    int getNumImages() { return files.size(); }
+  int getNumImages() { return files.size(); }
 
-    double getTimestamp(int id) {
-      if (timestamps.size() == 0)
-        return id * 0.1f;
-      if (id >= (int)timestamps.size())
-        return 0;
-      if (id < 0)
-        return 0;
-      return timestamps[id];
-    }
+  double getTimestamp(int id) {
+    if (timestamps.size() == 0)
+      return id * 0.1f;
+    if (id >= (int)timestamps.size())
+      return 0;
+    if (id < 0)
+      return 0;
+    return timestamps[id];
+  }
 
-    void prepImage(int id, bool as8U = false) {}
+  void prepImage(int id, bool as8U = false) {}
 
-    MinimalImageB *getImageRaw(int id) { return getImageRaw_internal(id, 0); }
+  MinimalImageB *getImageRaw(int id) { return getImageRaw_internal(id, 0); }
 
-    ImageAndExposure *getImage(int id, bool forceLoadDirectly = false) {
-      return getImage_internal(id, 0);
-    }
+  ImageAndExposure *getImage(int id, bool forceLoadDirectly = false) {
+    return getImage_internal(id, 0);
+  }
 
-    inline float *getPhotometricGamma() {
-      if (undistort == 0 || undistort->photometricUndist == 0)
-        return 0;
-      return undistort->photometricUndist->getG();
-    }
+  inline float *getPhotometricGamma() {
+    if (undistort == 0 || undistort->photometricUndist == 0)
+      return 0;
+    return undistort->photometricUndist->getG();
+  }
 
-    // undistorter. [0] always exists, [1-2] only when MT is enabled.
-    Undistort *undistort;
+  // undistorter. [0] always exists, [1-2] only when MT is enabled.
+  Undistort *undistort;
 
 #ifndef TESTING
   private:
