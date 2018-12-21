@@ -40,6 +40,18 @@ inline void createFiles(const TempDirectory& directory,
   }
 }
 
+inline std::string createFile(const TempDirectory& directory,
+                              std::string_view fileName,
+                              std::string_view fileContent) {
+    auto file = directory.mTempDirectory / fileName.data();
+    std::ofstream out{file};
+    out << fileContent;
+    out.close();
+
+    return file.string();
+}
+
+
 TEST_CASE( "Pass non existing directory", "[getdir]" ) {
   const std::string nonExistingDirectory = "/shit";
   std::vector<std::string> files;
@@ -134,6 +146,21 @@ TEST_CASE("pass non existing calib file", "[ImageFolderReader]" ) {
 
   const std::string imagesDir    = tempDirectory.string();
   const std::string calibFile    = "/shit/calib.txt";
+  const std::string gammaFile    = "";
+  const std::string vignetteFile = "";
+
+  REQUIRE_THROWS([&]{
+    ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile, vignetteFile);
+  }());
+}
+
+TEST_CASE("pass empty calib file", "[ImageFolderReader]" ) {
+  const TempDirectory tempDirectory;
+
+  createFiles(tempDirectory, 3, ".png");
+
+  const std::string imagesDir    = tempDirectory.string();
+  const std::string calibFile    = createFile(tempDirectory, "calib.txt", "");
   const std::string gammaFile    = "";
   const std::string vignetteFile = "";
 

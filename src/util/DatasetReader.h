@@ -35,7 +35,7 @@
 #include "util/settings.h"
 
 #include "IOWrapper/ImageRW.h"
-#include "util/Undistort.h"
+#include "util/Undistort.hpp"
 
 #if HAS_ZIPLIB
 #include "zip.h"
