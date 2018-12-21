@@ -250,7 +250,6 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
     return nullptr;
   }
 
-  printf(" ... found!\n");
   std::string l1;
   std::getline(f, l1);
   f.close();

@@ -8,7 +8,7 @@
 using namespace dso;
 
 
-TEST_CASE("pass empty calib file",
+TEST_CASE("pass empty calib path",
           "[Undistort, getUndistorterForFile]" ) {
   const std::string calibFile    = "";
   const std::string gammaFile    = "";
@@ -40,6 +40,22 @@ TEST_CASE("pass non existing calib file",
   REQUIRE(undistort == nullptr);
 }
 
-TEST_CASE("pass non existing calib file",
+TEST_CASE("pass empty calib file",
           "[Undistort, getUndistorterForFile]" ) {
+  TempDirectory tempDirectory;
+  const std::string calibFile = createFile(tempDirectory,
+                                           "calib.txt", "");
+
+  const std::string gammaFile    = "";
+  const std::string vignetteFile = "";
+
+  RedirectCerr redirect1;
+  RedirectCout redirect2;
+  const auto undistort = Undistort::getUndistorterForFile(
+                         calibFile, gammaFile, vignetteFile);
+  redirect1.release();
+  redirect2.release();
+
+  REQUIRE(undistort == nullptr);
 }
+
