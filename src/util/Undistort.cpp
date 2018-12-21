@@ -240,15 +240,14 @@ Undistort::~Undistort() {
 Undistort *Undistort::getUndistorterForFile(std::string configFilename,
                                             std::string gammaFilename,
                                             std::string vignetteFilename) {
-  printf("Reading Calibration from file %s", configFilename.c_str());
+  std::cout << "Reading Calibration from file " << configFilename << '\n';
 
-  std::ifstream f(configFilename.c_str());
+  std::ifstream f(configFilename);
   if (!f.good()) {
-    f.close();
-    printf(
-        " ... not found. Cannot operate without calibration, shutting down.\n");
-    f.close();
-    return 0;
+    std::cerr << "ERROR : " << configFilename
+              << " Cannot operate without calibration"
+              << "shutting down\n";
+    return nullptr;
   }
 
   printf(" ... found!\n");
@@ -341,8 +340,8 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
   }
 
   else {
-    printf("could not read calib file! exit.");
-    exit(1);
+    std::cerr << "could not read calib file! exit.\n";
+    return nullptr;
   }
 
   u->loadPhotometricCalibration(gammaFilename, "", vignetteFilename);

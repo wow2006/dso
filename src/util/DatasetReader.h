@@ -164,6 +164,10 @@ class ImageFolderReader {
     undistort =
         Undistort::getUndistorterForFile(calibfile, gammaFile, vignetteFile);
 
+    if(!undistort) {
+      throw std::runtime_error("can not read undistorter file");
+    }
+
     widthOrg  = undistort->getOriginalSize()[0];
     heightOrg = undistort->getOriginalSize()[1];
     width     = undistort->getSize()[0];
