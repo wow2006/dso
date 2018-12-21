@@ -157,6 +157,10 @@ class ImageFolderReader {
       }
     }
 
+    if(calibfile.empty() || !fs::exists(calibfile)) {
+      throw std::runtime_error("calib file is empty");
+    }
+
     undistort =
         Undistort::getUndistorterForFile(calibfile, gammaFile, vignetteFile);
 

@@ -122,9 +122,24 @@ TEST_CASE("pass empty string for calib file", "[ImageFolderReader]" ) {
   const std::string gammaFile    = "";
   const std::string vignetteFile = "";
 
-  //REQUIRE_THROWS([&]{
-  //  ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile, vignetteFile);
-  //}());
+  REQUIRE_THROWS([&]{
+    ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile, vignetteFile);
+  }());
+}
+
+TEST_CASE("pass non existing calib file", "[ImageFolderReader]" ) {
+  const TempDirectory tempDirectory;
+
+  createFiles(tempDirectory, 3, ".png");
+
+  const std::string imagesDir    = tempDirectory.string();
+  const std::string calibFile    = "/shit/calib.txt";
+  const std::string gammaFile    = "";
+  const std::string vignetteFile = "";
+
+  REQUIRE_THROWS([&]{
+    ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile, vignetteFile);
+  }());
 }
 
 /// }
