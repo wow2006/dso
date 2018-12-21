@@ -256,22 +256,20 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
 
   float ic[10];
 
-  Undistort *u;
+  Undistort *u = nullptr;
 
-  // for backwards-compatibility: Use RadTan model for 8 parameters.
   if (std::sscanf(l1.c_str(), "%f %f %f %f %f %f %f %f", &ic[0], &ic[1], &ic[2],
                   &ic[3], &ic[4], &ic[5], &ic[6], &ic[7]) == 8) {
-    printf("found RadTan (OpenCV) camera model, building rectifier.\n");
+    // for backwards-compatibility: Use RadTan model for 8 parameters.
+    std::cout << "found RadTan (OpenCV) camera model, building rectifier.\n";
     u = new UndistortRadTan(configFilename.c_str(), true);
     if (!u->isValid()) {
       delete u;
-      return 0;
+      return nullptr;
     }
-  }
-
-  // for backwards-compatibility: Use Pinhole / FoV model for 5 parameter.
-  else if (std::sscanf(l1.c_str(), "%f %f %f %f %f", &ic[0], &ic[1], &ic[2],
+  } else if (std::sscanf(l1.c_str(), "%f %f %f %f %f", &ic[0], &ic[1], &ic[2],
                        &ic[3], &ic[4]) == 5) {
+    // for backwards-compatibility: Use Pinhole / FoV model for 5 parameter.
     if (ic[4] == 0) {
       printf("found PINHOLE camera model, building rectifier.\n");
       u = new UndistortPinhole(configFilename.c_str(), true);
@@ -287,20 +285,16 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
         return 0;
       }
     }
-  }
-
-  // clean model selection implementation.
-  else if (std::sscanf(l1.c_str(), "KannalaBrandt %f %f %f %f %f %f %f %f",
+  } else if (std::sscanf(l1.c_str(), "KannalaBrandt %f %f %f %f %f %f %f %f",
                        &ic[0], &ic[1], &ic[2], &ic[3], &ic[4], &ic[5], &ic[6],
                        &ic[7]) == 8) {
+    // clean model selection implementation.
     u = new UndistortKB(configFilename.c_str(), false);
     if (!u->isValid()) {
       delete u;
       return 0;
     }
-  }
-
-  else if (std::sscanf(l1.c_str(), "RadTan %f %f %f %f %f %f %f %f", &ic[0],
+  } else if (std::sscanf(l1.c_str(), "RadTan %f %f %f %f %f %f %f %f", &ic[0],
                        &ic[1], &ic[2], &ic[3], &ic[4], &ic[5], &ic[6],
                        &ic[7]) == 8) {
     u = new UndistortRadTan(configFilename.c_str(), false);
@@ -308,9 +302,7 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
       delete u;
       return 0;
     }
-  }
-
-  else if (std::sscanf(l1.c_str(), "EquiDistant %f %f %f %f %f %f %f %f",
+  } else if (std::sscanf(l1.c_str(), "EquiDistant %f %f %f %f %f %f %f %f",
                        &ic[0], &ic[1], &ic[2], &ic[3], &ic[4], &ic[5], &ic[6],
                        &ic[7]) == 8) {
     u = new UndistortEquidistant(configFilename.c_str(), false);
@@ -318,27 +310,21 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
       delete u;
       return 0;
     }
-  }
-
-  else if (std::sscanf(l1.c_str(), "FOV %f %f %f %f %f", &ic[0], &ic[1], &ic[2],
+  } else if (std::sscanf(l1.c_str(), "FOV %f %f %f %f %f", &ic[0], &ic[1], &ic[2],
                        &ic[3], &ic[4]) == 5) {
     u = new UndistortFOV(configFilename.c_str(), false);
     if (!u->isValid()) {
       delete u;
       return 0;
     }
-  }
-
-  else if (std::sscanf(l1.c_str(), "Pinhole %f %f %f %f %f", &ic[0], &ic[1],
+  } else if (std::sscanf(l1.c_str(), "Pinhole %f %f %f %f %f", &ic[0], &ic[1],
                        &ic[2], &ic[3], &ic[4]) == 5) {
     u = new UndistortPinhole(configFilename.c_str(), false);
     if (!u->isValid()) {
       delete u;
       return 0;
     }
-  }
-
-  else {
+  } else {
     std::cerr << "could not read calib file! exit.\n";
     return nullptr;
   }
@@ -938,6 +924,7 @@ UndistortRadTan::UndistortRadTan(const char *configFileName, bool noprefix) {
   else
     readFromFile(configFileName, 8, "RadTan ");
 }
+
 UndistortRadTan::~UndistortRadTan() {}
 
 void UndistortRadTan::distortCoordinates(float *in_x, float *in_y, float *out_x,
@@ -990,6 +977,7 @@ UndistortEquidistant::UndistortEquidistant(const char *configFileName,
   else
     readFromFile(configFileName, 8, "EquiDistant ");
 }
+
 UndistortEquidistant::~UndistortEquidistant() {}
 
 void UndistortEquidistant::distortCoordinates(float *in_x, float *in_y,
@@ -1042,6 +1030,7 @@ UndistortKB::UndistortKB(const char *configFileName, bool noprefix) {
   else
     readFromFile(configFileName, 8, "KannalaBrandt ");
 }
+
 UndistortKB::~UndistortKB() {}
 
 void UndistortKB::distortCoordinates(float *in_x, float *in_y, float *out_x,
