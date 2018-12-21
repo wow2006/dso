@@ -8,48 +8,7 @@
 
 #include "util/DatasetReader.h"
 
-#include <boost/filesystem.hpp>
-
-namespace fs = boost::filesystem;
-
-
-struct TempDirectory {
-  TempDirectory() {
-    mTempDirectory = fs::temp_directory_path() / fs::unique_path();
-    fs::create_directories(mTempDirectory);
-  }
-
-  ~TempDirectory() {
-    fs::remove_all(mTempDirectory);
-  }
-
-  std::string string() const {
-    return mTempDirectory.string();
-  }
-
-  fs::path mTempDirectory;
-};
-
-inline void createFiles(const TempDirectory& directory,
-                        const int count,
-                        std::string_view fileExtention) {
-  for(int i = 0; i < count; ++i) {
-    auto file = directory.mTempDirectory / (std::to_string(i) + fileExtention.data());
-
-    std::ofstream(file.string()).close();
-  }
-}
-
-inline std::string createFile(const TempDirectory& directory,
-                              std::string_view fileName,
-                              std::string_view fileContent) {
-    auto file = directory.mTempDirectory / fileName.data();
-    std::ofstream out{file};
-    out << fileContent;
-    out.close();
-
-    return file.string();
-}
+#include "testUtils.hpp"
 
 
 TEST_CASE( "Pass non existing directory", "[getdir]" ) {
