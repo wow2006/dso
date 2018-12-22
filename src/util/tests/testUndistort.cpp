@@ -64,10 +64,11 @@ TEST_CASE("pass RadTan calib file",
   TempDirectory tempDirectory;
 
   std::string_view calibFileContent = 
-  "RadTan 0.5 0.5 0.5 0.5 0 0 0 0\n"
-  "640 480\n"
-  "crop\n"
-  "640 480\n";
+    "RadTan 0.5 0.5 0.5 0.5 0 0 0 0\n"
+    "640 480\n"
+    "crop\n"
+    "640 480\n";
+
   const std::string calibFile = createFile(tempDirectory,
                                            "calib.txt",
                                            calibFileContent);

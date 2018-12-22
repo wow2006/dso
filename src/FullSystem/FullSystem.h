@@ -122,27 +122,65 @@ class FullSystem {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+  /** 
+   * @brief 
+   */
   FullSystem();
 
+  /** 
+   * @brief 
+   */
   virtual ~FullSystem();
 
-  // adds a new frame, and creates point & residual structs.
+  /** 
+   * @brief adds a new frame, and creates point & residual structs.
+   * 
+   * @param image
+   * @param id
+   */
   void addActiveFrame(ImageAndExposure *image, int id);
 
-  // marginalizes a frame. drops / marginalizes points & residuals.
+  /** 
+   * @brief marginalizes a frame. drops / marginalizes points & residuals.
+   * 
+   * @param frame
+   */
   void marginalizeFrame(FrameHessian *frame);
 
+  /** 
+   * @brief 
+   */
   void blockUntilMappingIsFinished();
 
+  /** 
+   * @brief 
+   * 
+   * @param mnumOptIts
+   * 
+   * @return 
+   */
   float optimize(int mnumOptIts);
 
+  /** 
+   * @brief 
+   * 
+   * @param file
+   */
   void printResult(std::string file);
 
+  /** 
+   * @brief 
+   * 
+   * @param name
+   */
   void debugPlot(std::string name);
 
+  /** 
+   * @brief 
+   */
   void printFrameLifetimes();
-  // contains pointers to active frames
 
+  // contains pointers to active frames
   std::vector<IOWrap::Output3DWrapper *> outputWrapper;
 
   bool isLost;
@@ -150,7 +188,20 @@ public:
   bool initialized;
   bool linearizeOperation;
 
+  /** 
+   * @brief 
+   * 
+   * @param BInv
+   */
   void setGammaFunction(float *BInv);
+
+  /** 
+   * @brief 
+   * 
+   * @param originalCalib
+   * @param originalW
+   * @param originalH
+   */
   void setOriginalCalib(const VecXf &originalCalib, int originalW,
                         int originalH);
 
