@@ -129,6 +129,18 @@ public:
   // adds a new frame, and creates point & residual structs.
   void addActiveFrame(ImageAndExposure *image, int id);
 
+  FrameHessian* addNewFrameToHistory(ImageAndExposure *image, int id);
+
+  void makeImageAndDerivatives(FrameHessian* pFrame, const ImageAndExposure* pImage);
+
+  void initializingFrame(FrameHessian* pFrame, boost::unique_lock<boost::mutex>& lock);
+
+  void swapTrackingReference();
+
+  bool initialTrackingFailed(const Vec4& tres);
+
+  bool isNeedToMakeKF(FrameHessian* pFrame, const Vec4& tres);
+
   // marginalizes a frame. drops / marginalizes points & residuals.
   void marginalizeFrame(FrameHessian *frame);
 

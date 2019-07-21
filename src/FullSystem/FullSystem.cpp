@@ -836,18 +836,11 @@ void FullSystem::flagPointsForRemoval() {
   }
 }
 
-void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
-  if (isLost) {
-    return;
-  }
-  boost::unique_lock<boost::mutex> lock(trackMutex);
+FrameHessian* FullSystem::addNewFrameToHistory(ImageAndExposure *image, int id) {
+  auto fh    = new FrameHessian();
+  auto shell = new FrameShell();
 
-  // =========================== add into allFrameHistory
-  // =========================
-  FrameHessian *fh = new FrameHessian();
-  FrameShell *shell = new FrameShell();
-  shell->camToWorld =
-      SE3(); // no lock required, as fh is not used anywhere yet.
+  shell->camToWorld = SE3();
   shell->aff_g2l = AffLight(0, 0);
   shell->marginalizedAt = shell->id = allFrameHistory.size();
   shell->timestamp = image->timestamp;
@@ -855,59 +848,63 @@ void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
   fh->shell = shell;
   allFrameHistory.push_back(shell);
 
-  // =========================== make Images / derivatives etc.
-  // =========================
-  fh->ab_exposure = image->exposure_time;
-  fh->makeImages(image->image, &Hcalib);
+  return fh;
+}
 
-  if (!initialized) {
+void FullSystem::makeImageAndDerivatives(FrameHessian* pFrame, const ImageAndExposure* pImage) {
+  pFrame->ab_exposure = pImage->exposure_time;
+  pFrame->makeImages(pImage->image, &Hcalib);
+}
+
+void FullSystem::initializingFrame(FrameHessian* pFrame, boost::unique_lock<boost::mutex>& lock) {
     // use initializer!
-    if (coarseInitializer->frameID <
-        0) // first frame set. fh is kept by coarseInitializer.
-    {
-
-      coarseInitializer->setFirst(&Hcalib, fh);
-    } else if (coarseInitializer->trackFrame(fh, outputWrapper)) // if SNAPPED
-    {
-
-      initializeFromInitializer(fh);
+    if (coarseInitializer->frameID < 0) {
+      // first frame set. fh is kept by coarseInitializer.
+      coarseInitializer->setFirst(&Hcalib, pFrame);
+    } else if (coarseInitializer->trackFrame(pFrame, outputWrapper)) {
+      // if SNAPPED
+      initializeFromInitializer(pFrame);
       lock.unlock();
-      deliverTrackedFrame(fh, true);
+      deliverTrackedFrame(pFrame, true);
     } else {
       // if still initializing
-      fh->shell->poseValid = false;
-      delete fh;
+      pFrame->shell->poseValid = false;
+      delete pFrame;
     }
-    return;
-  } // do front-end operation.
+}
 
-  // =========================== SWAP tracking reference?.
-  // =========================
+void FullSystem::swapTrackingReference() {
   if (coarseTracker_forNewKF->refFrameID > coarseTracker->refFrameID) {
     boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
     CoarseTracker *tmp = coarseTracker;
     coarseTracker = coarseTracker_forNewKF;
     coarseTracker_forNewKF = tmp;
   }
+}
 
-  Vec4 tres = trackNewCoarse(fh);
-  if (!std::isfinite((double)tres[0]) || !std::isfinite((double)tres[1]) ||
-      !std::isfinite((double)tres[2]) || !std::isfinite((double)tres[3])) {
-    printf("Initial Tracking failed: LOST!\n");
+bool FullSystem::initialTrackingFailed(const Vec4& tres) {
+  if (!std::isfinite(static_cast<double>(tres[0])) ||
+      !std::isfinite(static_cast<double>(tres[1])) ||
+      !std::isfinite(static_cast<double>(tres[2])) ||
+      !std::isfinite(static_cast<double>(tres[3]))) {
+    std::cerr << "Initial Tracking failed: LOST!\n";
     isLost = true;
-    return;
+    return true;
   }
+  return false;
+}
 
+bool FullSystem::isNeedToMakeKF(FrameHessian* pFrame, const Vec4& tres) {
   bool needToMakeKF = false;
   if (setting_keyframesPerSecond > 0) {
     needToMakeKF =
         allFrameHistory.size() == 1 ||
-        (fh->shell->timestamp - allKeyFramesHistory.back()->timestamp) >
+        (pFrame->shell->timestamp - allKeyFramesHistory.back()->timestamp) >
             0.95f / setting_keyframesPerSecond;
   } else {
     Vec2 refToFh = AffLight::fromToVecExposure(
-        coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
-        coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
+        coarseTracker->lastRef->ab_exposure, pFrame->ab_exposure,
+        coarseTracker->lastRef_aff_g2l, pFrame->shell->aff_g2l);
 
     // BRIGHTNESS CHECK
     needToMakeKF = allFrameHistory.size() == 1 ||
@@ -922,13 +919,40 @@ void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
                        1 ||
                    2 * coarseTracker->firstCoarseRMSE < tres[0];
   }
+  return needToMakeKF;
+}
+
+void FullSystem::addActiveFrame(ImageAndExposure *pImage, int id) {
+  if (isLost) {
+    return;
+  }
+
+  boost::unique_lock<boost::mutex> lock(trackMutex);
+
+  auto pFrame = addNewFrameToHistory(pImage, id);
+
+  makeImageAndDerivatives(pFrame, pImage);
+
+  if (!initialized) {
+    initializingFrame(pFrame, lock);
+    return;
+  }
+
+  swapTrackingReference();
+
+  Vec4 tres = trackNewCoarse(pFrame);
+  if(initialTrackingFailed(tres)) {
+    return;
+  }
+
+  bool needToMakeKF = isNeedToMakeKF(pFrame, tres);
 
   for (IOWrap::Output3DWrapper *ow : outputWrapper) {
-    ow->publishCamPose(fh->shell, &Hcalib);
+    ow->publishCamPose(pFrame->shell, &Hcalib);
   }
 
   lock.unlock();
-  deliverTrackedFrame(fh, needToMakeKF);
+  deliverTrackedFrame(pFrame, needToMakeKF);
   return;
 }
 

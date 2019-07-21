@@ -1,14 +1,14 @@
+// STL
 #include <memory>   // std::make_unique
 #include <thread>   // std::thread
 #include <string>   // std::string
 #include <iostream> // std::{cout,cerr}
-
+// Boost
 #include <boost/program_options.hpp> // @function parseConfig
-
+// Internal
 #include "util/DatasetReader.h"
 #include "FullSystem/FullSystem.h"
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
-
 
 struct Config {
   enum Preset { preset0 = 0, preset1, preset2, preset3 };
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
   g_pConfig = &config;
 
   if(!Config::parseConfig(argc, argv)) {
-    return 1;
+    return EXIT_FAILURE;
   }
 
   auto pReader = std::make_unique<ImageFolderReader>(g_pConfig->m_sImagesPath,
@@ -87,6 +87,6 @@ int main(int argc, char* argv[]) {
 
   runthread.join();
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
