@@ -3,3 +3,6 @@
 
 2. [ ] Find elegent way to use SSE with CMake.
 
+3. [ ] Add coverity scan to cmake
+
+

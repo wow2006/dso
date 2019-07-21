@@ -4,6 +4,7 @@ get_target_property(
   INTERFACE_INCLUDE_DIRECTORIES
 )
 
+# tests-main {
 add_library(
   tests-main
   OBJECT
@@ -21,7 +22,9 @@ target_include_directories(
   PUBLIC
   ${CATCH_INCLUDE_DIRECTORY}
 )
+# }
 
+# DatasetReader {
 add_executable(
   testDatasetReader
   testDatasetReader.cpp
@@ -34,4 +37,21 @@ target_link_libraries(
   Catch
   dso
 )
+# }
+
+# Undistort {
+add_executable(
+  testUndistort
+  testUndistort.cpp
+  ../Undistort.cpp
+  $<TARGET_OBJECTS:tests-main>
+)
+
+target_link_libraries(
+  testUndistort 
+  PUBLIC
+  Catch
+  dso
+)
+# }
 

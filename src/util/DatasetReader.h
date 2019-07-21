@@ -35,7 +35,7 @@
 #include "util/settings.h"
 
 #include "IOWrapper/ImageRW.h"
-#include "util/Undistort.h"
+#include "util/Undistort.hpp"
 
 #if HAS_ZIPLIB
 #include "zip.h"
@@ -129,27 +129,27 @@ class ImageFolderReader {
       }
 
 #if HAS_ZIPLIB
-      int ziperror = 0;
-      ziparchive = zip_open(path.c_str(), ZIP_RDONLY, &ziperror);
-      if (ziperror != 0) {
-        printf("ERROR %d reading archive %s!\n", ziperror, path.c_str());
-        exit(1);
-      }
+    int ziperror = 0;
+    ziparchive = zip_open(path.c_str(), ZIP_RDONLY, &ziperror);
+    if (ziperror != 0) {
+      printf("ERROR %d reading archive %s!\n", ziperror, path.c_str());
+      exit(1);
+    }
 
-      files.clear();
-      int numEntries = zip_get_num_entries(ziparchive, 0);
-      for (int k = 0; k < numEntries; k++) {
-        const char *name = zip_get_name(ziparchive, k, ZIP_FL_ENC_STRICT);
-        std::string nstr = std::string(name);
-        if (nstr == "." || nstr == "..")
-          continue;
-        files.push_back(name);
-      }
+    files.clear();
+    int numEntries = zip_get_num_entries(ziparchive, 0);
+    for (int k = 0; k < numEntries; k++) {
+      const char *name = zip_get_name(ziparchive, k, ZIP_FL_ENC_STRICT);
+      std::string nstr = std::string(name);
+      if (nstr == "." || nstr == "..")
+        continue;
+      files.push_back(name);
+    }
 
-      printf("got %d entries and %d files!\n", numEntries, (int)files.size());
-      std::sort(files.begin(), files.end());
+    printf("got %d entries and %d files!\n", numEntries, (int)files.size());
+    std::sort(files.begin(), files.end());
 #else
-      throw std::runtime_error("ERROR: cannot read .zip archive, as compile without ziplib!");
+    throw std::runtime_error("ERROR: cannot read .zip archive, as compile without ziplib!");
 #endif
     } else {
       if(getdir(path, files) <= 0) {
@@ -157,8 +157,16 @@ class ImageFolderReader {
       }
     }
 
+    if(calibfile.empty() || !fs::exists(calibfile)) {
+      throw std::runtime_error("calib file is empty");
+    }
+
     undistort =
         Undistort::getUndistorterForFile(calibfile, gammaFile, vignetteFile);
+
+    if(!undistort) {
+      throw std::runtime_error("can not read undistorter file");
+    }
 
     widthOrg  = undistort->getOriginalSize()[0];
     heightOrg = undistort->getOriginalSize()[1];
@@ -171,7 +179,7 @@ class ImageFolderReader {
               << path.c_str() << '\n';
   }
 
-  ~ImageFolderReader() {
+    ~ImageFolderReader() {
 #if HAS_ZIPLIB
     if (ziparchive != 0)
       zip_close(ziparchive);

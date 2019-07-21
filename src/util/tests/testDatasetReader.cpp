@@ -8,7 +8,7 @@
 
 #include "util/DatasetReader.h"
 
-#include <boost/filesystem.hpp>
+#include "testUtils.hpp"
 
 
 TEST_CASE( "Pass non existing directory", "[getdir]" ) {
@@ -26,36 +26,23 @@ TEST_CASE( "Pass Empty string", "[getdir]" ) {
 }
 
 TEST_CASE( "Pass Empty directory", "[getdir]" ) {
-  namespace fs = boost::filesystem;
+  const TempDirectory tempDirectory;
 
-  const auto emptyDirectoryPath = fs::temp_directory_path() / fs::unique_path();
-  fs::create_directories(emptyDirectoryPath);
-
-  const std::string emptyDirectory = emptyDirectoryPath.string();
+  const std::string emptyDirectory = tempDirectory.mTempDirectory.string();
   std::vector<std::string> files;
 
   REQUIRE(getdir(emptyDirectory, files) == Empty);
-
-  fs::remove_all(emptyDirectoryPath);
 }
 
 TEST_CASE( "Pass directory witch contains 3 files", "[getdir]" ) {
-  namespace fs = boost::filesystem;
-
-  const auto emptyDirectoryPath = fs::temp_directory_path() / fs::unique_path();
-  fs::create_directories(emptyDirectoryPath);
-  for(int i = 0; i < 3; ++i) {
-    auto file = emptyDirectoryPath / std::to_string(i);
-
-    std::ofstream(file.string()).close();
-  }
+  const int count = 3;
+  const TempDirectory emptyDirectoryPath;
+  createFiles(emptyDirectoryPath, count, "");
 
   const std::string emptyDirectory = emptyDirectoryPath.string();
   std::vector<std::string> files;
 
   REQUIRE(getdir(emptyDirectory, files) == 3);
-
-  fs::remove_all(emptyDirectoryPath);
 }
 
 /// ImageFolderReader {
@@ -72,20 +59,10 @@ TEST_CASE("pass path to zip file is not exist", "[ImageFolderReader]" ) {
 }
 
 TEST_CASE("pass path to zip file and ZIPLIB not exist", "[ImageFolderReader]" ) {
-  const std::string zipFile = [](){ 
-    namespace fs = boost::filesystem;
+  const TempDirectory tempDirectory;
+  createFiles(tempDirectory, 1, ".zip");
 
-    const auto emptyDirectoryPath = fs::temp_directory_path() / fs::unique_path();
-
-    fs::create_directories(emptyDirectoryPath);
-
-    const auto fileString = (emptyDirectoryPath / "a.zip").string();
-
-    std::ifstream f{fileString};
-    f.close();
-
-    return fileString;
-  }();
+  const std::string zipFile      = (tempDirectory.mTempDirectory / "0.zip").string();
   const std::string calibFile    = "";
   const std::string gammaFile    = "";
   const std::string vignetteFile = "";
@@ -98,6 +75,51 @@ TEST_CASE("pass path to zip file and ZIPLIB not exist", "[ImageFolderReader]" ) 
 TEST_CASE("pass empty directory", "[ImageFolderReader]" ) {
   const std::string imagesDir    = "";
   const std::string calibFile    = "";
+  const std::string gammaFile    = "";
+  const std::string vignetteFile = "";
+
+  REQUIRE_THROWS([&]{
+    ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile, vignetteFile);
+  }());
+}
+
+TEST_CASE("pass empty string for calib file", "[ImageFolderReader]" ) {
+  const TempDirectory tempDirectory;
+
+  createFiles(tempDirectory, 3, ".png");
+
+  const std::string imagesDir    = tempDirectory.string();
+  const std::string calibFile    = "";
+  const std::string gammaFile    = "";
+  const std::string vignetteFile = "";
+
+  REQUIRE_THROWS([&]{
+    ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile, vignetteFile);
+  }());
+}
+
+TEST_CASE("pass non existing calib file", "[ImageFolderReader]" ) {
+  const TempDirectory tempDirectory;
+
+  createFiles(tempDirectory, 3, ".png");
+
+  const std::string imagesDir    = tempDirectory.string();
+  const std::string calibFile    = "/shit/calib.txt";
+  const std::string gammaFile    = "";
+  const std::string vignetteFile = "";
+
+  REQUIRE_THROWS([&]{
+    ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile, vignetteFile);
+  }());
+}
+
+TEST_CASE("pass empty calib file", "[ImageFolderReader]" ) {
+  const TempDirectory tempDirectory;
+
+  createFiles(tempDirectory, 3, ".png");
+
+  const std::string imagesDir    = tempDirectory.string();
+  const std::string calibFile    = createFile(tempDirectory, "calib.txt", "");
   const std::string gammaFile    = "";
   const std::string vignetteFile = "";
 
