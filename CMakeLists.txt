@@ -7,29 +7,28 @@ set(LIBRARY_OUTPUT_PATH    lib)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include(${CMAKE_SOURCE_DIR}/cmake/Doxygen.cmake)
-
-# TODO flags
-add_definitions("-DENABLE_SSE")
-set(CMAKE_CXX_FLAGS
-   "${SSE_FLAGS} -O3 -g -std=c++0x -march=native"
-#   "${SSE_FLAGS} -O3 -g -std=c++0x -fno-omit-frame-pointer"
-)
+include(${CMAKE_SOURCE_DIR}/cmake/InsturctionSet.cmake)
 
 option(ENABLE_TESTING "" ON)
 
 # required libraries
 find_package(SuiteParse REQUIRED)
 find_package(Eigen3     REQUIRED)
-find_package(Boost      COMPONENTS system thread program_options filesystem)
+find_package(Boost      COMPONENTS system thread program_options filesystem REQUIRED)
 find_package(Pangolin   REQUIRED)
 find_package(OpenCV     REQUIRED imgcodecs highgui)
 
 # ===========================================
 # compile main library.
 
-# Sources files
-set(
-  SOURCE_FILES
+add_library(
+  dso
+  STATIC
+)
+
+target_sources(
+  dso
+  PRIVATE
   ${PROJECT_SOURCE_DIR}/src/FullSystem/FullSystem.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/FullSystemOptimize.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/FullSystemOptPoint.cpp
@@ -56,18 +55,12 @@ set(
   ${PROJECT_SOURCE_DIR}/src/IOWrapper/OpenCV/ImageRW_OpenCV.cpp
 )
 
-add_library(
-  dso
-  STATIC
-  ${SOURCE_FILES}
-)
-
 target_include_directories(
   dso
   PUBLIC
   ${PROJECT_SOURCE_DIR}/src
   ${PROJECT_SOURCE_DIR}/thirdparty/Sophus
-  PRIVATE
+  SYSTEM PRIVATE
   ${CSPARSE_INCLUDE_DIR}
   ${CHOLMOD_INCLUDE_DIR}
   ${OpenCV_INCLUDE_DIRS}
@@ -80,6 +73,7 @@ target_include_directories(
 target_link_libraries(
   dso
   PUBLIC
+  InsturctionSet
   Eigen3::Eigen
   Boost::thread
   Boost::filesystem
@@ -95,9 +89,10 @@ target_compile_features(
 target_compile_options(
   dso
   PUBLIC
-  $<$<CXX_COMPILER_ID:Clang>:-Weverything -Wno-c++98-compat-pedantic -fcolor-diagnostics>
-  $<$<CXX_COMPILER_ID:GNU>:-Wall -W>
+  $<$<CXX_COMPILER_ID:Clang>:-Weverything;-Wno-c++98-compat-pedantic;-fcolor-diagnostics>
+  $<$<CXX_COMPILER_ID:GNU>:-Wall;-W>
 )
+
 # ===========================================
 
 # ===========================================
