@@ -6,7 +6,8 @@ add_library(
 target_compile_options(
   InsturctionSet
   INTERFACE
-  $<$<PLATFORM_ID:Linux>:-msse2;-march=native>
+  $<$<PLATFORM_ID:Linux>:-msse4.1;-march=native>
+  $<$<PLATFORM_ID:Windows>:/arch:SSE4.1>
 )
 
 target_compile_definitions(
