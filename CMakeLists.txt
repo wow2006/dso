@@ -10,6 +10,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/Doxygen.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/InsturctionSet.cmake)
 
 option(ENABLE_TESTING "" ON)
+option(ENABLE_SPIKES "" ON)
 
 # required libraries
 find_package(SuiteParse REQUIRED)
@@ -17,6 +18,7 @@ find_package(Eigen3     REQUIRED)
 find_package(Boost      COMPONENTS system thread program_options filesystem REQUIRED)
 find_package(Pangolin   REQUIRED)
 find_package(OpenCV     REQUIRED imgcodecs highgui)
+find_package(fmt REQUIRED)
 
 # ===========================================
 # compile main library.
@@ -78,6 +80,7 @@ target_link_libraries(
   Boost::thread
   Boost::filesystem
   ${OpenCV_LIBS}
+  fmt::fmt
 )
 
 target_compile_features(
@@ -130,3 +133,8 @@ if(ENABLE_TESTING)
 
   add_subdirectory(${CMAKE_SOURCE_DIR}/src/util/tests)
 endif()
+
+if(ENABLE_SPIKES)
+  add_subdirectory(spikes)
+endif()
+

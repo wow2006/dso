@@ -27,34 +27,37 @@
  *  Created on: Jan 7, 2014
  *      Author: engelj
  */
-
+// STL
+#include <cstdio>
 #include <fstream>
 #include <algorithm>
-
+// Eigen
 #include <Eigen/Eigenvalues>
 #include <Eigen/LU>
 #include <Eigen/SVD>
-
+// fmt
+#include <fmt/color.h>
+#include <fmt/printf.h>
+#include <fmt/format.h>
+// Internal
 #include "FullSystem/FullSystem.h"
-
+// FullSystem
 #include "FullSystem/ImmaturePoint.h"
 #include "FullSystem/PixelSelector.h"
 #include "FullSystem/PixelSelector2.h"
+#include "FullSystem/CoarseTracker.h"
+#include "FullSystem/CoarseInitializer.h"
 #include "FullSystem/ResidualProjections.h"
-#include "IOWrapper/ImageDisplay.h"
-#include "stdio.h"
+// util
 #include "util/globalCalib.h"
 #include "util/globalFuncs.h"
-
-#include "FullSystem/CoarseInitializer.h"
-#include "FullSystem/CoarseTracker.h"
-
+#include "util/ImageAndExposure.h"
+// OptimizationBackend
 #include "OptimizationBackend/EnergyFunctional.h"
 #include "OptimizationBackend/EnergyFunctionalStructs.h"
-
+// IOWrapper
+#include "IOWrapper/ImageDisplay.h"
 #include "IOWrapper/Output3DWrapper.h"
-
-#include "util/ImageAndExposure.h"
 
 namespace dso {
 int FrameHessian::instanceCounter = 0;
@@ -861,14 +864,23 @@ void FullSystem::initializingFrame(FrameHessian* pFrame, boost::unique_lock<boos
     // use initializer!
     if (coarseInitializer->frameID < 0) {
       // first frame set. fh is kept by coarseInitializer.
+      fmt::print(fmt::fg(fmt::color::red), "Process shell ({})\n",
+          pFrame->shell->incoming_id
+          );
       coarseInitializer->setFirst(&Hcalib, pFrame);
     } else if (coarseInitializer->trackFrame(pFrame, outputWrapper)) {
       // if SNAPPED
+      fmt::print(fmt::fg(fmt::color::green), "Process shell ({})\n",
+          pFrame->shell->incoming_id
+          );
       initializeFromInitializer(pFrame);
       lock.unlock();
       deliverTrackedFrame(pFrame, true);
     } else {
       // if still initializing
+      fmt::print(fmt::fg(fmt::color::blue), "Process shell ({})\n",
+          pFrame->shell->incoming_id
+          );
       pFrame->shell->poseValid = false;
       delete pFrame;
     }

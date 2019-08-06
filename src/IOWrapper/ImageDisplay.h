@@ -28,12 +28,17 @@
 #include "util/NumType.h"
 #include "util/MinimalImage.h"
 
+namespace cv {
+class Mat;
+} // namespace
 
 namespace dso
 {
 
 namespace IOWrap
 {
+
+void displayImageStitch(const char* windowName, const std::vector<cv::Mat*> images, int cc, int rc);
 
 void displayImage(const char* windowName, const MinimalImageB* img, bool autoSize = false);
 void displayImage(const char* windowName, const MinimalImageB3* img, bool autoSize = false);
