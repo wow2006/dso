@@ -39,6 +39,8 @@
 #include <fmt/color.h>
 #include <fmt/printf.h>
 #include <fmt/format.h>
+// easy_profiler
+#include <easy/profiler.h>
 // Internal
 #include "FullSystem/FullSystem.h"
 // FullSystem
@@ -131,6 +133,8 @@ FullSystem::FullSystem() {
   coarseTracker_forNewKF = new CoarseTracker(wG[0], hG[0]);
   coarseInitializer      = new CoarseInitializer(wG[0], hG[0]);
   pixelSelector          = new PixelSelector(wG[0], hG[0]);
+
+  coarseInitializer->printDebug = true;
 
   statistics_lastNumOptIts         = 0;
   statistics_numDroppedPoints      = 0;
@@ -262,6 +266,7 @@ void FullSystem::printResult(std::string file) {
 }
 
 Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
+  EASY_FUNCTION(profiler::colors::BlueGrey);
   assert(!allFrameHistory.empty());
   // set pose initialization.
 
@@ -841,6 +846,7 @@ void FullSystem::flagPointsForRemoval() {
 }
 
 FrameHessian* FullSystem::addNewFrameToHistory(ImageAndExposure *image, int id) {
+  EASY_FUNCTION(profiler::colors::Red);
   auto fh    = new FrameHessian();
   auto shell = new FrameShell();
 
@@ -856,11 +862,13 @@ FrameHessian* FullSystem::addNewFrameToHistory(ImageAndExposure *image, int id) 
 }
 
 void FullSystem::makeImageAndDerivatives(FrameHessian* pFrame, const ImageAndExposure* pImage) {
+  EASY_FUNCTION(profiler::colors::Green);
   pFrame->ab_exposure = pImage->exposure_time;
   pFrame->makeImages(pImage->image, &Hcalib);
 }
 
 void FullSystem::initializingFrame(FrameHessian* pFrame, boost::unique_lock<boost::mutex>& lock) {
+  EASY_FUNCTION(profiler::colors::Blue);
     // use initializer!
     if (coarseInitializer->frameID < 0) {
       // first frame set. fh is kept by coarseInitializer.
@@ -887,6 +895,7 @@ void FullSystem::initializingFrame(FrameHessian* pFrame, boost::unique_lock<boos
 }
 
 void FullSystem::swapTrackingReference() {
+  EASY_FUNCTION(profiler::colors::Amber);
   if (coarseTracker_forNewKF->refFrameID > coarseTracker->refFrameID) {
     boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
     CoarseTracker *tmp = coarseTracker;
@@ -896,6 +905,7 @@ void FullSystem::swapTrackingReference() {
 }
 
 bool FullSystem::initialTrackingFailed(const Vec4& tres) {
+  EASY_FUNCTION(profiler::colors::Cyan);
   if (!std::isfinite(static_cast<double>(tres[0])) ||
       !std::isfinite(static_cast<double>(tres[1])) ||
       !std::isfinite(static_cast<double>(tres[2])) ||
@@ -936,6 +946,7 @@ bool FullSystem::isNeedToMakeKF(FrameHessian* pFrame, const Vec4& tres) {
 }
 
 void FullSystem::addActiveFrame(ImageAndExposure *pImage, int id) {
+  EASY_FUNCTION(profiler::colors::Gold);
   if (isLost) {
     return;
   }
@@ -970,6 +981,7 @@ void FullSystem::addActiveFrame(ImageAndExposure *pImage, int id) {
 }
 
 void FullSystem::deliverTrackedFrame(FrameHessian *fh, bool needKF) {
+  EASY_FUNCTION(profiler::colors::DeepOrange);
   if (linearizeOperation) {
     if (goStepByStep && lastRefStopID != coarseTracker->refFrameID) {
       MinimalImageF3 img(wG[0], hG[0], fh->dI);
@@ -1083,80 +1095,84 @@ void FullSystem::blockUntilMappingIsFinished() {
   mappingThread.join();
 }
 
-void FullSystem::makeNonKeyFrame(FrameHessian *fh) {
+void FullSystem::makeNonKeyFrame(FrameHessian *frameHessian) {
   // needs to be set by mapping thread. no lock required since we are in mapping
   // thread.
   {
     boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
-    assert(fh->shell->trackingRef != nullptr);
-    fh->shell->camToWorld =
-        fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
-    fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
+    assert(frameHessian->shell->trackingRef != nullptr);
+    frameHessian->shell->camToWorld =
+        frameHessian->shell->trackingRef->camToWorld * frameHessian->shell->camToTrackingRef;
+    frameHessian->setEvalPT_scaled(frameHessian->shell->camToWorld.inverse(), frameHessian->shell->aff_g2l);
   }
 
-  traceNewCoarse(fh);
-  delete fh;
+  traceNewCoarse(frameHessian);
+  delete frameHessian;
 }
 
-void FullSystem::makeKeyFrame(FrameHessian *fh) {
+void FullSystem::makeKeyFrame(FrameHessian *frameHessian) {
   // needs to be set by mapping thread
   {
     boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
     assert(fh->shell->trackingRef != nullptr);
-    fh->shell->camToWorld =
-        fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
-    fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
+    frameHessian->shell->camToWorld =
+        frameHessian->shell->trackingRef->camToWorld * frameHessian->shell->camToTrackingRef;
+    frameHessian->setEvalPT_scaled(frameHessian->shell->camToWorld.inverse(), frameHessian->shell->aff_g2l);
   }
 
-  traceNewCoarse(fh);
+  traceNewCoarse(frameHessian);
 
   boost::unique_lock<boost::mutex> lock(mapMutex);
 
-  // =========================== Flag Frames to be Marginalized.
   // =========================
-  flagFramesForMarginalization(fh);
+  // Flag Frames to be Marginalized.
+  // =========================
+  flagFramesForMarginalization(frameHessian);
 
-  // =========================== add New Frame to Hessian Struct.
   // =========================
-  fh->idx = frameHessians.size();
-  frameHessians.push_back(fh);
-  fh->frameID = allKeyFramesHistory.size();
-  allKeyFramesHistory.push_back(fh->shell);
-  ef->insertFrame(fh, &Hcalib);
+  // add New Frame to Hessian Struct.
+  // =========================
+  frameHessian->idx = frameHessians.size();
+  frameHessians.push_back(frameHessian);
+  frameHessian->frameID = allKeyFramesHistory.size();
+  allKeyFramesHistory.push_back(frameHessian->shell);
+  ef->insertFrame(frameHessian, &Hcalib);
 
   setPrecalcValues();
 
-  // =========================== add new residuals for old points
+  // =========================
+  // add new residuals for old points
   // =========================
   int numFwdResAdde = 0;
-  for (FrameHessian *fh1 : frameHessians) // go through all active frames
-  {
-    if (fh1 == fh) {
+  // go through all active frames
+  for (auto frame1 : frameHessians) {
+    if (frame1 == frameHessian) {
       continue;
     }
-    for (PointHessian *ph : fh1->pointHessians) {
-      PointFrameResidual *r = new PointFrameResidual(ph, fh1, fh);
-      r->setState(ResState::IN);
-      ph->residuals.push_back(r);
-      ef->insertResidual(r);
-      ph->lastResiduals[1] = ph->lastResiduals[0];
-      ph->lastResiduals[0] =
-          std::pair<PointFrameResidual *, ResState>(r, ResState::IN);
+
+    for (auto pointHessian : frame1->pointHessians) {
+      auto residual = new PointFrameResidual(pointHessian, frame1, frameHessian);
+      residual->setState(ResState::IN);
+      pointHessian->residuals.push_back(residual);
+      ef->insertResidual(residual);
+      pointHessian->lastResiduals[1] = pointHessian->lastResiduals[0];
+      pointHessian->lastResiduals[0] = std::make_pair(residual, ResState::IN);
       numFwdResAdde += 1;
     }
   }
 
-  // =========================== Activate Points (& flag for marginalization).
+  // =========================
+  // Activate Points (& flag for marginalization).
   // =========================
   activatePointsMT();
   ef->makeIDX();
 
   // =========================== OPTIMIZE ALL =========================
-
-  fh->frameEnergyTH = frameHessians.back()->frameEnergyTH;
+  frameHessian->frameEnergyTH = frameHessians.back()->frameEnergyTH;
   float rmse = optimize(setting_maxOptIterations);
 
-  // =========================== Figure Out if INITIALIZATION FAILED
+  // =========================
+  // Figure Out if INITIALIZATION FAILED
   // =========================
   if (allKeyFramesHistory.size() <= 4) {
     if (allKeyFramesHistory.size() == 2 &&
@@ -1195,7 +1211,8 @@ void FullSystem::makeKeyFrame(FrameHessian *fh) {
 
   debugPlot("post Optimize");
 
-  // =========================== (Activate-)Marginalize Points
+  // =========================
+  // (Activate-)Marginalize Points
   // =========================
   flagPointsForRemoval();
   ef->dropPointsF();
@@ -1203,17 +1220,17 @@ void FullSystem::makeKeyFrame(FrameHessian *fh) {
                 ef->lastNullspaces_affA, ef->lastNullspaces_affB);
   ef->marginalizePointsF();
 
-  // =========================== add new Immature points & new residuals
   // =========================
-  makeNewTraces(fh, nullptr);
+  // add new Immature points & new residuals
+  // =========================
+  makeNewTraces(frameHessian, nullptr);
 
-  for (IOWrap::Output3DWrapper *ow : outputWrapper) {
-    ow->publishGraph(ef->connectivityMap);
-    ow->publishKeyframes(frameHessians, false, &Hcalib);
+  for (auto output : outputWrapper) {
+    output->publishGraph(ef->connectivityMap);
+    output->publishKeyframes(frameHessians, false, &Hcalib);
   }
 
   // =========================== Marginalize Frames =========================
-
   for (unsigned int i = 0; i < frameHessians.size(); i++) {
     if (frameHessians[i]->flaggedForMarginalization) {
       marginalizeFrame(frameHessians[i]);
@@ -1222,7 +1239,6 @@ void FullSystem::makeKeyFrame(FrameHessian *fh) {
   }
 
   printLogLine();
-  // printEigenValLine();
 }
 
 void FullSystem::initializeFromInitializer(FrameHessian *newFrame) {
