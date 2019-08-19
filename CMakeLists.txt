@@ -17,7 +17,7 @@ find_package(SuiteParse    REQUIRED)
 find_package(Eigen3        REQUIRED)
 find_package(Boost         COMPONENTS system thread program_options filesystem REQUIRED)
 find_package(Pangolin      REQUIRED)
-find_package(OpenCV        REQUIRED imgcodecs highgui)
+find_package(OpenCV        REQUIRED imgcodecs highgui imgproc)
 find_package(fmt           REQUIRED)
 find_package(easy_profiler REQUIRED)
 
