@@ -24,8 +24,10 @@ WORKDIR code
 RUN git config --global http.sslVerify false
 RUN git clone https://github.com/stevenlovegrove/Pangolin.git
 RUN cd Pangolin && mkdir build && cd build && cmake .. && make && make install
+RUN git clone https://github.com/yse/easy_profiler.git
+RUN cd easy_profiler && mkdir build && cd build && cmake -DEASY_PROFILER_NO_GUI=ON .. && make && make install
 RUN git clone https://github.com/wow2006/dso.git dso
-RUN cd dso && git checkout OpenCV4
+RUN cd dso
 RUN mkdir build
 WORKDIR build
 RUN cmake ../dso
