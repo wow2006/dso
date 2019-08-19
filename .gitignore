@@ -9,3 +9,4 @@ build-*
 *.so.*
 thirdparty/libzip-1.1.1
 compile_commands.json
+CMakeLists.txt.user
