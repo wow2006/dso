@@ -128,7 +128,7 @@ configure_file(${CMAKE_SOURCE_DIR}/scripts/run.sh.in run.sh @ONLY)
 
 add_executable(
   dso_DEMO
-  ${CMAKE_SOURCE_DIR}/main.cpp
+  ${CMAKE_SOURCE_DIR}/src/main.cpp
 )
 
 target_link_libraries(
