@@ -22,8 +22,9 @@
  */
 
 #pragma once
-
-#include "Eigen/Core"
+// Eigen
+#include <Eigen/Core>
+// Internal
 #include "util/ImageAndExposure.h"
 #include "util/MinimalImage.h"
 #include "util/NumType.h"
