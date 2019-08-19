@@ -22,10 +22,10 @@
 #include <opencv2/opencv.hpp>
 
 static bool initialized = false;
-static CalibHessian Hcalib;
-static CoarseInitializer *coarseInitializer;
-static std::vector<FrameShell *> allFrameHistory;
-static std::vector<FrameHessian *> allFrames;
+static dso::CalibHessian Hcalib;
+static dso::CoarseInitializer *coarseInitializer;
+static std::vector<dso::FrameShell *> allFrameHistory;
+static std::vector<dso::FrameHessian *> allFrames;
 
 static dso::CoarseTracker
     *coarseTracker_forNewKF;              // set as as reference. protected by
@@ -35,11 +35,11 @@ static dso::CoarseTracker *coarseTracker; // always used to track new frames.
 
 std::vector<std::string> listImages(const std::string &inputDirectory);
 
-FrameHessian *addNewFrameToHistory(ImageAndExposure *image, int id);
+dso::FrameHessian *addNewFrameToHistory(dso::ImageAndExposure *image, int id);
 
-void makeImagesDerivatives(FrameHessian *fh, ImageAndExposure *image);
+void makeImagesDerivatives(dso::FrameHessian *fh, dso::ImageAndExposure *image);
 
-void initializing(FrameHessian *fh);
+void initializing(dso::FrameHessian *fh);
 
 void debugPlotTracking();
 
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
   // TODO(Hussien): remove global variables
   reader->setGlobalCalibration();
 
-  coarseInitializer = new CoarseInitializer(wG[0], hG[0]);
+  coarseInitializer = new dso::CoarseInitializer(dso::wG[0], dso::hG[0]);
   coarseInitializer->printDebug = true;
 
   for (int i = startImageIndex; i < stopImageIndex; ++i) {
@@ -130,12 +130,12 @@ std::vector<std::string> listImages(const std::string &inputDirectory) {
   return images;
 }
 
-FrameHessian *addNewFrameToHistory(ImageAndExposure *image, int id) {
-  auto frameHessian = new FrameHessian();
-  auto shell = new FrameShell();
+dso::FrameHessian *addNewFrameToHistory(dso::ImageAndExposure *image, int id) {
+  auto frameHessian = new dso::FrameHessian();
+  auto shell = new dso::FrameShell();
   // no lock required, as fh is not used anywhere yet.
-  shell->camToWorld = SE3();
-  shell->aff_g2l = AffLight(0, 0);
+  shell->camToWorld = dso::SE3();
+  shell->aff_g2l = dso::AffLight(0, 0);
   shell->marginalizedAt = shell->id = static_cast<int>(allFrameHistory.size());
   shell->timestamp = image->timestamp;
   shell->incoming_id = id;
@@ -146,13 +146,13 @@ FrameHessian *addNewFrameToHistory(ImageAndExposure *image, int id) {
   return frameHessian;
 }
 
-void makeImagesDerivatives(FrameHessian *fh, ImageAndExposure *image) {
+void makeImagesDerivatives(dso::FrameHessian *fh, dso::ImageAndExposure *image) {
   fh->ab_exposure = image->exposure_time;
   fh->makeImages(image->image, &Hcalib);
 }
 
-void initializing(FrameHessian *pFrame) {
-  static std::vector<IOWrap::Output3DWrapper *> outputWrapper;
+void initializing(dso::FrameHessian *pFrame) {
+  static std::vector<dso::IOWrap::Output3DWrapper *> outputWrapper;
   // use initializer!
   if (coarseInitializer->frameID < 0) {
     // first frame set. fh is kept by coarseInitializer.
@@ -175,13 +175,13 @@ void initializing(FrameHessian *pFrame) {
 }
 
 void debugPlotTracking() {
-  const int wh = hG[0] * wG[0];
+  const int wh = dso::hG[0] * dso::wG[0];
 
-  std::vector<MinimalImageB3 *> images;
+  std::vector<dso::MinimalImageB3 *> images;
 
   for (auto frame2 : allFrames) {
     if (frame2->debugImage == nullptr) {
-      frame2->debugImage = new MinimalImageB3(wG[0], hG[0]);
+      frame2->debugImage = new dso::MinimalImageB3(dso::wG[0], dso::hG[0]);
     }
   }
 
@@ -202,7 +202,7 @@ void debugPlotTracking() {
         colL = 255;
       }
 
-      debugImage->at(i) = Vec3b(colL, colL, colL);
+      debugImage->at(i) = dso::Vec3b(colL, colL, colL);
     }
   }
 
@@ -228,5 +228,5 @@ void debugPlotTracking() {
     }
   }
 
-  IOWrap::waitKey(0);
+  dso::IOWrap::waitKey(0);
 }

@@ -1,21 +1,26 @@
 # /spikes/CMakeLists.txt
 
-add_executable(
-  spikesAddActiveFrame
-  spikesAddActiveFrame.cpp
-)
+set(executables spikesAddActiveFrame spikesPixelSelector)
 
-target_link_libraries(
-  spikesAddActiveFrame
-  PUBLIC
-  dso
-  fmt::fmt
-  Boost::program_options
-)
+foreach(executable ${executables})
 
-target_include_directories(
-  spikesAddActiveFrame
-  PUBLIC
-  ${CMAKE_SOURCE_DIR}/thirdparty/GSL/include/
-)
+  add_executable(
+    ${executable}
+    ${executable}.cpp
+  )
 
+  target_link_libraries(
+    ${executable}
+    PUBLIC
+    dso
+    fmt::fmt
+    Boost::program_options
+  )
+
+  target_include_directories(
+    ${executable}
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/thirdparty/GSL/include/
+  )
+
+endforeach()
