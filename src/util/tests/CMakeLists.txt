@@ -37,6 +37,11 @@ target_link_libraries(
   Catch
   dso
 )
+
+add_test(
+  testDatasetReader
+  ${CMAKE_CURRENT_BINARY_DIR}/bin/testDatasetReader
+)
 # }
 
 # Undistort {
@@ -52,6 +57,11 @@ target_link_libraries(
   PUBLIC
   Catch
   dso
+)
+
+add_test(
+  testUndistort 
+  ${CMAKE_CURRENT_BINARY_DIR}/bin/testUndistort
 )
 # }
 
