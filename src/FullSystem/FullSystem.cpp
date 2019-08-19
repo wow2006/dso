@@ -1114,7 +1114,7 @@ void FullSystem::makeKeyFrame(FrameHessian *frameHessian) {
   // needs to be set by mapping thread
   {
     boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
-    assert(fh->shell->trackingRef != nullptr);
+    assert(frameHessian->shell->trackingRef != nullptr);
     frameHessian->shell->camToWorld =
         frameHessian->shell->trackingRef->camToWorld * frameHessian->shell->camToTrackingRef;
     frameHessian->setEvalPT_scaled(frameHessian->shell->camToWorld.inverse(), frameHessian->shell->aff_g2l);
