@@ -22,33 +22,27 @@
  */
 
 #pragma once
-#include <algorithm>
-#include <string_view>
-#include <fstream>
-#include <sstream>
+// STL
 #include <string>
-
-#include <boost/thread.hpp>
+// Boost
 #include <boost/filesystem.hpp>
-
-#include "util/globalCalib.h"
-#include "util/globalFuncs.h"
-#include "util/settings.h"
-
-#include "IOWrapper/ImageRW.h"
+// Eigen
+#include <Eigen/Core>
+// Internal
+#include "util/ImageAndExposure.h"
 #include "util/Undistort.hpp"
 
-#if HAS_ZIPLIB
-#include "zip.h"
-#endif
+enum DirectoryReturn { NotExist = -1, Empty = 0 };
 
-
-using namespace dso;
-
-enum DirectoryReturn {
-  NotExist = -1,
-  Empty    = 0
-};
+/**
+ * @brief check end of string
+ *
+ * @param fullString input string
+ * @param ending end string to check
+ *
+ * @return true compare
+ */
+bool hasEnding(std::string const &fullString, std::string const &ending);
 
 /**
  * @brief read files names in directory
@@ -59,322 +53,132 @@ enum DirectoryReturn {
  * @return number of files found in directory
  *         @see DirectoryReturn
  */
-inline int getdir(std::string_view dir, std::vector<std::string> &files) {
-  namespace fs = boost::filesystem;
-
-  const auto directory = fs::path{std::string{dir}};
-
-  if(dir.empty() || !fs::is_directory(dir.data())) {
-    return NotExist;
-  }
-
-  fs::directory_iterator filesIterators{directory};
-  fs::directory_iterator filesIteratorsEnd;
-
-  std::transform(filesIterators, filesIteratorsEnd,
-      std::back_inserter(files), [](const fs::directory_entry& entry) {
-      return entry.path().string();
-      });
-
-  std::sort(std::begin(files), std::end(files), [](auto a, auto b) {
-      const auto baseFileNameA = fs::path(a).stem().string();
-      const auto baseFileNameB = fs::path(b).stem().string();
-
-      return std::stoi(baseFileNameA) < std::stoi(baseFileNameB);
-      });
-
-  return files.size();
-}
+int getdir(std::string_view dir, std::vector<std::string> &files);
 
 struct PrepImageItem {
   int id;
   bool isQueud;
-  ImageAndExposure *pt;
+  dso::ImageAndExposure *pt;
 
   /**
    * @brief Consturctor take Image Id
    *
    * @param _id Image Id
    */
-  PrepImageItem(int _id)
-    : id{_id}, isQueud{false}, pt{nullptr} {}
+  PrepImageItem(int _id) : id{_id}, isQueud{false}, pt{nullptr} {}
 
   /**
    * @brief Release Image pointer
    */
-  void release() {
-    delete pt;
-    pt = nullptr;
-  }
+  void release();
 };
 
 class ImageFolderReader {
-  public:
-    /**
-     * @brief
-     *
-     * @param path
-     * @param calibFile
-     * @param gammaFile
-     * @param vignetteFile
-     */
-    ImageFolderReader(std::string path_, std::string calibFile_,
-        std::string gammaFile, std::string vignetteFile)
-      : path{path_}, calibfile{calibFile_} {
-        namespace fs = boost::filesystem;
+public:
+  /**
+   * @brief Consturctor
+   *
+   * @param path_ images directory
+   * @param calibFile_ calibration directory
+   * @param gammaFile gamma file directory
+   * @param vignetteFile vignette file directory
+   */
+  ImageFolderReader(std::string path_, std::string calibFile_,
+                    std::string gammaFile, std::string vignetteFile);
 
-#if HAS_ZIPLIB
-        ziparchive = 0;
-        databuffer = 0;
-#endif
+  ~ImageFolderReader();
 
-        isZipped = (path.length() > 4 &&
-            path.substr(path.length() - 4) == ".zip");
+  static bool checkInputFile(const std::string& inputFileName, const std::string& extension);
 
-        if (isZipped) {
-          if(!fs::exists(path)) {
-            throw std::runtime_error(path + " is not exist");
-          }
+  void readZipFile();
 
-#if HAS_ZIPLIB
-          int ziperror = 0;
-          ziparchive = zip_open(path.c_str(), ZIP_RDONLY, &ziperror);
-          if (ziperror != 0) {
-            printf("ERROR %d reading archive %s!\n", ziperror, path.c_str());
-            exit(1);
-          }
+  void readImages();
 
-          files.clear();
-          int numEntries = zip_get_num_entries(ziparchive, 0);
-          for (int k = 0; k < numEntries; k++) {
-            const char *name = zip_get_name(ziparchive, k, ZIP_FL_ENC_STRICT);
-            std::string nstr = std::string(name);
-            if (nstr == "." || nstr == "..")
-              continue;
-            files.push_back(name);
-          }
+  void readCalibration(const std::string& gammaFile, const std::string& vignetteFile);
 
-          printf("got %d entries and %d files!\n", numEntries, (int)files.size());
-          std::sort(files.begin(), files.end());
-#else
-          throw std::runtime_error("ERROR: cannot read .zip archive, as compile without ziplib!");
-#endif
-        } else {
-          if(getdir(path, files) <= 0) {
-            throw std::runtime_error("Can not found images");
-          }
-        }
+  Eigen::VectorXf getOriginalCalib() {
+    return undistort->getOriginalParameter().cast<float>();
+  }
 
-        if(calibfile.empty() || !fs::exists(calibfile)) {
-          throw std::runtime_error("calib file is empty");
-        }
+  Eigen::Vector2i getOriginalDimensions() {
+    return undistort->getOriginalSize();
+  }
 
-        undistort =
-          Undistort::getUndistorterForFile(calibfile, gammaFile, vignetteFile);
+  void getCalibMono(Eigen::Matrix3f &K, int &w, int &h) {
+    K = undistort->getK().cast<float>();
+    w = undistort->getSize()[0];
+    h = undistort->getSize()[1];
+  }
 
-        if(!undistort) {
-          throw std::runtime_error("can not read undistorter file");
-        }
+  void setGlobalCalibration();
 
-        widthOrg  = undistort->getOriginalSize()[0];
-        heightOrg = undistort->getOriginalSize()[1];
-        width     = undistort->getSize()[0];
-        height    = undistort->getSize()[1];
+  int getNumImages() { return static_cast<int>(files.size()); }
 
-        // load timestamps if possible.
-        loadTimestamps();
-        std::cout << "ImageFolderReader: got " << files.size() << " files in "
-          << path.c_str() << '\n';
-      }
-
-    ~ImageFolderReader() {
-#if HAS_ZIPLIB
-      if (ziparchive != 0)
-        zip_close(ziparchive);
-      if (databuffer != 0)
-        delete databuffer;
-#endif
-
-      delete undistort;
-    };
-
-    Eigen::VectorXf getOriginalCalib() {
-      return undistort->getOriginalParameter().cast<float>();
+  double getTimestamp(int id) {
+    if (timestamps.size() == 0) {
+      return id * 0.1;
     }
 
-    Eigen::Vector2i getOriginalDimensions() {
-      return undistort->getOriginalSize();
+    if (id >= static_cast<int>(timestamps.size())) {
+      return 0;
     }
 
-    void getCalibMono(Eigen::Matrix3f &K, int &w, int &h) {
-      K = undistort->getK().cast<float>();
-      w = undistort->getSize()[0];
-      h = undistort->getSize()[1];
+    if (id < 0) {
+      return 0;
     }
 
-    void setGlobalCalibration() {
-      int w_out, h_out;
-      Eigen::Matrix3f K;
-      getCalibMono(K, w_out, h_out);
-      setGlobalCalib(w_out, h_out, K);
+    return timestamps[static_cast<std::size_t>(id)];
+  }
+
+  void prepImage(int id, bool as8U = false) {
+    (void)id;
+    (void)as8U;
+  }
+
+  dso::MinimalImageB *getImageRaw(int id) {
+    return getImageRaw_internal(id, 0);
+  }
+
+  dso::ImageAndExposure *getImage(int id, bool forceLoadDirectly = false) {
+    (void)forceLoadDirectly;
+    return getImage_internal(id, 0);
+  }
+
+  float *getPhotometricGamma() {
+    if (undistort == nullptr || undistort->photometricUndist == nullptr) {
+      return nullptr;
     }
 
-    int getNumImages() { return files.size(); }
+    return undistort->photometricUndist->getG();
+  }
 
-    double getTimestamp(int id) {
-      if (timestamps.size() == 0)
-        return id * 0.1f;
-      if (id >= (int)timestamps.size())
-        return 0;
-      if (id < 0)
-        return 0;
-      return timestamps[id];
-    }
-
-    void prepImage(int id, bool as8U = false) {}
-
-    MinimalImageB *getImageRaw(int id) { return getImageRaw_internal(id, 0); }
-
-    ImageAndExposure *getImage(int id, bool forceLoadDirectly = false) {
-      return getImage_internal(id, 0);
-    }
-
-    inline float *getPhotometricGamma() {
-      if (undistort == 0 || undistort->photometricUndist == 0)
-        return 0;
-      return undistort->photometricUndist->getG();
-    }
-
-    // undistorter. [0] always exists, [1-2] only when MT is enabled.
-    Undistort *undistort;
+  // undistorter. [0] always exists, [1-2] only when MT is enabled.
+  dso::Undistort *undistort;
 
 #ifndef TESTING
-  private:
+private:
 #endif
-    MinimalImageB *getImageRaw_internal(int id, int unused) {
-      if (!isZipped) {
-        // CHANGE FOR ZIP FILE
-        return IOWrap::readImageBW_8U(files[id]);
-      } else {
-#if HAS_ZIPLIB
-        if (databuffer == 0)
-          databuffer = new char[widthOrg * heightOrg * 6 + 10000];
-        zip_file_t *fle = zip_fopen(ziparchive, files[id].c_str(), 0);
-        long readbytes =
-          zip_fread(fle, databuffer, (long)widthOrg * heightOrg * 6 + 10000);
+  dso::MinimalImageB *getImageRaw_internal(int id, int unused);
 
-        if (readbytes > (long)widthOrg * heightOrg * 6) {
-          printf("read %ld/%ld bytes for file %s. increase buffer!!\n", readbytes,
-              (long)widthOrg * heightOrg * 6 + 10000, files[id].c_str());
-          delete[] databuffer;
-          databuffer = new char[(long)widthOrg * heightOrg * 30];
-          fle = zip_fopen(ziparchive, files[id].c_str(), 0);
-          readbytes =
-            zip_fread(fle, databuffer, (long)widthOrg * heightOrg * 30 + 10000);
+  dso::ImageAndExposure *getImage_internal(int id, int unused);
 
-          if (readbytes > (long)widthOrg * heightOrg * 30) {
-            printf("buffer still to small (read %ld/%ld). abort.\n", readbytes,
-                (long)widthOrg * heightOrg * 30 + 10000);
-            exit(1);
-          }
-        }
+  void loadTimestamps();
 
-        return IOWrap::readStreamBW_8U(databuffer, readbytes);
-#else
-        printf("ERROR: cannot read .zip archive, as compile without ziplib!\n");
-        exit(1);
-#endif
-      }
-    }
+  std::vector<dso::ImageAndExposure *> preloadedImages;
+  std::vector<std::string> files;
+  std::vector<double> timestamps;
+  std::vector<float> exposures;
 
-    ImageAndExposure *getImage_internal(int id, int unused) {
-      MinimalImageB *minimg = getImageRaw_internal(id, 0);
-      ImageAndExposure *ret2 = undistort->undistort<unsigned char>(
-          minimg, (exposures.size() == 0 ? 1.0f : exposures[id]),
-          (timestamps.size() == 0 ? 0.0 : timestamps[id]));
-      delete minimg;
-      return ret2;
-    }
+  int width, height;
+  int widthOrg, heightOrg;
 
-    void loadTimestamps() {
-      std::ifstream tr;
-      std::string timesFile =
-        path.substr(0, path.find_last_of('/')) + "/times.txt";
-      tr.open(timesFile.c_str());
-      while (!tr.eof() && tr.good()) {
-        std::string line;
-        char buf[1000];
-        tr.getline(buf, 1000);
+  std::string path;
+  std::string calibfile;
 
-        int id;
-        double stamp;
-        float exposure = 0;
+  bool isZipped;
 
-        if (3 == sscanf(buf, "%d %lf %f", &id, &stamp, &exposure)) {
-          timestamps.push_back(stamp);
-          exposures.push_back(exposure);
-        }
-
-        else if (2 == sscanf(buf, "%d %lf", &id, &stamp)) {
-          timestamps.push_back(stamp);
-          exposures.push_back(exposure);
-        }
-      }
-      tr.close();
-
-      // check if exposures are correct, (possibly skip)
-      bool exposuresGood = ((int)exposures.size() == (int)getNumImages());
-      for (int i = 0; i < (int)exposures.size(); i++) {
-        if (exposures[i] == 0) {
-          // fix!
-          float sum = 0, num = 0;
-          if (i > 0 && exposures[i - 1] > 0) {
-            sum += exposures[i - 1];
-            num++;
-          }
-          if (i + 1 < (int)exposures.size() && exposures[i + 1] > 0) {
-            sum += exposures[i + 1];
-            num++;
-          }
-
-          if (num > 0)
-            exposures[i] = sum / num;
-        }
-
-        if (exposures[i] == 0)
-          exposuresGood = false;
-      }
-
-      if ((int)getNumImages() != (int)timestamps.size()) {
-        printf("set timestamps and exposures to zero!\n");
-        exposures.clear();
-        timestamps.clear();
-      }
-
-      if ((int)getNumImages() != (int)exposures.size() || !exposuresGood) {
-        printf("set EXPOSURES to zero!\n");
-        exposures.clear();
-      }
-
-      printf("got %d images and %d timestamps and %d exposures.!\n",
-          (int)getNumImages(), (int)timestamps.size(), (int)exposures.size());
-    }
-
-    std::vector<ImageAndExposure *> preloadedImages;
-    std::vector<std::string> files;
-    std::vector<double> timestamps;
-    std::vector<float> exposures;
-
-    int width, height;
-    int widthOrg, heightOrg;
-
-    std::string path;
-    std::string calibfile;
-
-    bool isZipped;
-
-#if HAS_ZIPLIB
-    zip_t *ziparchive;
-    char *databuffer;
+#ifdef HAS_ZIPLIB
+  zip_t *ziparchive;
+  char *databuffer;
 #endif
 };
