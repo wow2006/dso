@@ -212,8 +212,7 @@ void debugPlotTracking() {
       auto image =
           new cv::Mat(images[i]->h, images[i]->w, CV_8UC3, images[i]->data);
 
-      char imageText[100];
-      sprintf(imageText, "Image(%d)", i);
+      std::string imageText = fmt::format("Image({})", i);
 
       cv::putText(*image, imageText, cv::Point(30, 30),
                   cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8,
