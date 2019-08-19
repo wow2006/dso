@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
                                                      "", "");
   pReader->setGlobalCalibration();
 
-  auto pViewer = std::make_unique<IOWrap::PangolinDSOViewer>(wG[0], hG[0], false);
+  auto pViewer = std::make_unique<dso::IOWrap::PangolinDSOViewer>(dso::wG[0], dso::hG[0], false);
 
   std::thread runthread([&]() {
     auto pFullSystem = std::make_unique<dso::FullSystem>();
