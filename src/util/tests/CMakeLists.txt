@@ -1,3 +1,4 @@
+# src/util/tests/CMakeLists.txt
 get_target_property(
   CATCH_INCLUDE_DIRECTORY
   Catch
@@ -24,44 +25,27 @@ target_include_directories(
 )
 # }
 
-# DatasetReader {
-add_executable(
-  testDatasetReader
-  testDatasetReader.cpp
-  $<TARGET_OBJECTS:tests-main>
-)
+set(test_targets testDatasetReader testUndistort testUndistort2)
 
-target_link_libraries(
-  testDatasetReader
-  PUBLIC
-  Catch
-  dso
-)
+foreach(test_target ${test_targets})
 
-add_test(
-  testDatasetReader
-  ${CMAKE_CURRENT_BINARY_DIR}/bin/testDatasetReader
-)
-# }
+  add_executable(
+    ${test_target}
+    ${test_target}.cpp
+    $<TARGET_OBJECTS:tests-main>
+  )
 
-# Undistort {
-add_executable(
-  testUndistort
-  testUndistort.cpp
-  ../Undistort.cpp
-  $<TARGET_OBJECTS:tests-main>
-)
+  target_link_libraries(
+    ${test_target}
+    PUBLIC
+    Catch
+    dso
+  )
 
-target_link_libraries(
-  testUndistort 
-  PUBLIC
-  Catch
-  dso
-)
+  add_test(
+    ${test_target}
+    ${CMAKE_CURRENT_BINARY_DIR}/bin/${test_target}
+  )
 
-add_test(
-  testUndistort 
-  ${CMAKE_CURRENT_BINARY_DIR}/bin/testUndistort
-)
-# }
+endforeach()
 
