@@ -13,6 +13,7 @@ RUN apt-get install -y --no-install-recommends \
                 libsuitesparse-dev             \
                 libeigen3-dev                  \
                 libboost-all-dev               \
+                libfmt-dev                     \
                 libopencv-dev
 
 RUN apt-get install -y --no-install-recommends \
