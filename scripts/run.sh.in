@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ $# -gt 0 ]; then
+  IMAGES_DIR="$1"
+else
+  echo "Please pass images directory!"
+  exit -1
+fi
+
+"@RUN_EXEC@"                        \
+  files=$IMAGES_DIR/images/         \
+  calib=$IMAGES_DIR/camera.txt      \
+  gamma=$IMAGES_DIR/pcalib.txt      \
+  vignette=$IMAGES_DIR/vignette.png \
+  preset=0                          \
+  nogui=0                           \
+  mode=0

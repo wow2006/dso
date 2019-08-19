@@ -9,8 +9,8 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/Doxygen.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/InsturctionSet.cmake)
 
-option(ENABLE_TESTING "" ON)
-option(ENABLE_SPIKES "" ON)
+option(ENABLE_TESTING "Enable test cases" OFF)
+option(ENABLE_SPIKES  "Enable spikes"     OFF)
 
 # required libraries
 find_package(SuiteParse    REQUIRED)
@@ -43,13 +43,16 @@ target_sources(
   ${PROJECT_SOURCE_DIR}/src/FullSystem/ImmaturePoint.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/HessianBlocks.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/PixelSelector2.cpp
+  # OptimizationBackend
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/EnergyFunctional.cpp
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/AccumulatedTopHessian.cpp
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/AccumulatedSCHessian.cpp
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/EnergyFunctionalStructs.cpp
+  # util
   ${PROJECT_SOURCE_DIR}/src/util/settings.cpp
   ${PROJECT_SOURCE_DIR}/src/util/Undistort.cpp
   ${PROJECT_SOURCE_DIR}/src/util/globalCalib.cpp
+  ${PROJECT_SOURCE_DIR}/src/util/DatasetReader.cpp
   # dso_pangolin_SOURCE_FILES
   ${PROJECT_SOURCE_DIR}/src/IOWrapper/Pangolin/KeyFrameDisplay.cpp
   ${PROJECT_SOURCE_DIR}/src/IOWrapper/Pangolin/PangolinDSOViewer.cpp
@@ -113,6 +116,14 @@ target_link_libraries(
   dso
   ${Pangolin_LIBRARIES}
 )
+
+# TODO(Hussein): Get directory from target
+set(
+  RUN_EXEC
+  ${CMAKE_BINARY_DIR}/bin/dso_dataset
+)
+
+configure_file(${CMAKE_SOURCE_DIR}/scripts/run.sh.in run.sh @ONLY)
 # ===========================================
 
 add_executable(
