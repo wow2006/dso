@@ -1,5 +1,6 @@
 # DSO: Direct Sparse Odometry
 [![Build Status](https://travis-ci.org/wow2006/dso.svg?branch=master)](https://travis-ci.org/wow2006/dso.svg?branch=master)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/3c365ce8e3a04e8ba49a5577238d1b15)](https://www.codacy.com/app/wow2006/dso?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=wow2006/dso&amp;utm_campaign=Badge_Grade)
 
 For more information see
 [https://vision.in.tum.de/dso](https://vision.in.tum.de/dso)
