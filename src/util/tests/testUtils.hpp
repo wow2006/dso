@@ -1,16 +1,46 @@
 #pragma once
-
+// STL
 #include <sstream>
 #include <iostream>
-
+// Eigen3
+#include <Eigen/Core>
+// Boost
 #include <boost/filesystem.hpp>
+
+#ifdef _WIN32
+#define NULL_DEVICE "NUL:"
+#else
+#define NULL_DEVICE "/dev/null"
+#endif
+
+struct RedirectStdout {
+  RedirectStdout() {
+    fflush(stdout);
+    mStdoutSave = dup(STDOUT_FILENO);
+    freopen(NULL_DEVICE, "w", stdout);
+  }
+
+  void release() {
+    fflush(stdout);
+    if(mStdoutSave != 0) {
+      dup2(mStdoutSave, STDOUT_FILENO);
+      mStdoutSave = 0;
+    }
+  }
+
+  ~RedirectStdout() {
+    release();
+  }
+
+  int mStdoutSave = 0;
+};
 
 struct RedirectCerr {
   RedirectCerr() {
     m_pCerrBuffer = std::cerr.rdbuf();
     std::cerr.rdbuf(mStringStream.rdbuf());
   }
-  
+
   void release() {
     if(m_pCerrBuffer != nullptr) {
       std::cerr.rdbuf(m_pCerrBuffer);
@@ -31,7 +61,7 @@ struct RedirectCout {
     m_pCoutBuffer = std::cout.rdbuf();
     std::cout.rdbuf(mStringStream.rdbuf());
   }
-  
+
   void release() {
     if(m_pCoutBuffer != nullptr) {
       std::cout.rdbuf(m_pCoutBuffer);
@@ -48,7 +78,6 @@ struct RedirectCout {
 };
 
 namespace fs = boost::filesystem;
-
 
 struct TempDirectory {
   TempDirectory() {
@@ -88,3 +117,17 @@ inline std::string createFile(const TempDirectory& directory,
     return file.string();
 }
 
+inline std::string generateCalibString(const std::array<double, 5>& calibation,
+    const Eigen::Vector2i& inputImageDim, const Eigen::Vector2i &outputImageDim) {
+  std::stringstream calibStream;
+
+  for(auto cal : calibation) {
+    calibStream << cal << ' ';
+  }
+  calibStream << '\n';
+  calibStream << inputImageDim(0) << ' ' << inputImageDim(1) << '\n';
+  calibStream << "crop\n";
+  calibStream << outputImageDim(0) << ' ' << outputImageDim(1) << '\n';
+
+  return calibStream.str();
+}
