@@ -1,12 +1,10 @@
+// Catch2
 #include <catch/catch.hpp>
-
+// Internal
 #include "testUtils.hpp"
-
 #include "../Undistort.hpp"
 
-
 using namespace dso;
-
 
 TEST_CASE("pass empty calib path",
           "[Undistort, getUndistorterForFile]" ) {

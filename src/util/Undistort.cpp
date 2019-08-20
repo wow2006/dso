@@ -293,15 +293,15 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
 
   float ic[10];
 
-  Undistort *u = nullptr;
+  Undistort *undistort = nullptr;
 
   if (std::sscanf(l1.c_str(), "%f %f %f %f %f %f %f %f", &ic[0], &ic[1], &ic[2],
                   &ic[3], &ic[4], &ic[5], &ic[6], &ic[7]) == 8) {
     // for backwards-compatibility: Use RadTan model for 8 parameters.
     std::cout << "found RadTan (OpenCV) camera model, building rectifier.\n";
-    u = new UndistortRadTan(configFilename.c_str(), true);
-    if (!u->isValid()) {
-      delete u;
+    undistort = new UndistortRadTan(configFilename.c_str(), true);
+    if (!undistort->isValid()) {
+      delete undistort;
       return nullptr;
     }
   } else if (std::sscanf(l1.c_str(), "%f %f %f %f %f", &ic[0], &ic[1], &ic[2],
@@ -309,16 +309,16 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
     // for backwards-compatibility: Use Pinhole / FoV model for 5 parameter.
     if (ic[4] == 0) {
       printf("found PINHOLE camera model, building rectifier.\n");
-      u = new UndistortPinhole(configFilename.c_str(), true);
-      if (!u->isValid()) {
-        delete u;
+      undistort = new UndistortPinhole(configFilename.c_str(), true);
+      if (!undistort->isValid()) {
+        delete undistort;
         return nullptr;
       }
     } else {
       printf("found ATAN camera model, building rectifier.\n");
-      u = new UndistortFOV(configFilename.c_str(), true);
-      if (!u->isValid()) {
-        delete u;
+      undistort = new UndistortFOV(configFilename.c_str(), true);
+      if (!undistort->isValid()) {
+        delete undistort;
         return nullptr;
       }
     }
@@ -326,39 +326,39 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
                        &ic[0], &ic[1], &ic[2], &ic[3], &ic[4], &ic[5], &ic[6],
                        &ic[7]) == 8) {
     // clean model selection implementation.
-    u = new UndistortKB(configFilename.c_str(), false);
-    if (!u->isValid()) {
-      delete u;
+    undistort = new UndistortKB(configFilename.c_str(), false);
+    if (!undistort->isValid()) {
+      delete undistort;
       return nullptr;
     }
   } else if (std::sscanf(l1.c_str(), "RadTan %f %f %f %f %f %f %f %f", &ic[0],
                        &ic[1], &ic[2], &ic[3], &ic[4], &ic[5], &ic[6],
                        &ic[7]) == 8) {
-    u = new UndistortRadTan(configFilename.c_str(), false);
-    if (!u->isValid()) {
-      delete u;
+    undistort = new UndistortRadTan(configFilename.c_str(), false);
+    if (!undistort->isValid()) {
+      delete undistort;
       return nullptr;
     }
   } else if (std::sscanf(l1.c_str(), "EquiDistant %f %f %f %f %f %f %f %f",
                        &ic[0], &ic[1], &ic[2], &ic[3], &ic[4], &ic[5], &ic[6],
                        &ic[7]) == 8) {
-    u = new UndistortEquidistant(configFilename.c_str(), false);
-    if (!u->isValid()) {
-      delete u;
+    undistort = new UndistortEquidistant(configFilename.c_str(), false);
+    if (!undistort->isValid()) {
+      delete undistort;
       return nullptr;
     }
   } else if (std::sscanf(l1.c_str(), "FOV %f %f %f %f %f", &ic[0], &ic[1], &ic[2],
                        &ic[3], &ic[4]) == 5) {
-    u = new UndistortFOV(configFilename.c_str(), false);
-    if (!u->isValid()) {
-      delete u;
+    undistort = new UndistortFOV(configFilename.c_str(), false);
+    if (!undistort->isValid()) {
+      delete undistort;
       return nullptr;
     }
   } else if (std::sscanf(l1.c_str(), "Pinhole %f %f %f %f %f", &ic[0], &ic[1],
                        &ic[2], &ic[3], &ic[4]) == 5) {
-    u = new UndistortPinhole(configFilename.c_str(), false);
-    if (!u->isValid()) {
-      delete u;
+    undistort = new UndistortPinhole(configFilename.c_str(), false);
+    if (!undistort->isValid()) {
+      delete undistort;
       return nullptr;
     }
   } else {
@@ -366,9 +366,9 @@ Undistort *Undistort::getUndistorterForFile(std::string configFilename,
     return nullptr;
   }
 
-  u->loadPhotometricCalibration(gammaFilename, "", vignetteFilename);
+  undistort->loadPhotometricCalibration(gammaFilename, "", vignetteFilename);
 
-  return u;
+  return undistort;
 }
 
 void Undistort::loadPhotometricCalibration(std::string file,
