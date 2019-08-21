@@ -4,43 +4,43 @@
 #include <vector>
 // Catch
 #define TESTING 1
-#include <catch/catch.hpp>
+#include <gtest/gtest.h>
 // Internal
 #include "util/DatasetReader.h"
 //
 #include "testUtils.hpp"
 
-TEST_CASE("Pass input string ABC and endsWithC", "[hasEnding]") {
+TEST(hasEnding, PassInputStringABC) {
   const std::string fullString = "ABC";
   const std::string endsWithC  = "C";
 
-  REQUIRE(hasEnding(fullString, endsWithC) == true);
+  ASSERT_TRUE(hasEnding(fullString, endsWithC));
 }
 
-TEST_CASE("Pass non existing directory", "[getdir]") {
+TEST(getdir, PassNonExistingDirectory) {
   const std::string nonExistingDirectory = "/shit";
   std::vector<std::string> files;
 
-  REQUIRE(getdir(nonExistingDirectory, files) == NotExist);
+  ASSERT_TRUE(getdir(nonExistingDirectory, files) == NotExist);
 }
 
-TEST_CASE("Pass Empty string", "[getdir]") {
+TEST(getdir, PassEmptyString) {
   const std::string emptyString;
   std::vector<std::string> files;
 
-  REQUIRE(getdir(emptyString, files) == NotExist);
+  ASSERT_EQ(getdir(emptyString, files), NotExist);
 }
 
-TEST_CASE("Pass Empty directory", "[getdir]") {
+TEST(getdir, PassEmptyDirectory) {
   const TempDirectory tempDirectory;
 
   const std::string emptyDirectory = tempDirectory.mTempDirectory.string();
   std::vector<std::string> files;
 
-  REQUIRE(getdir(emptyDirectory, files) == Empty);
+  ASSERT_TRUE(getdir(emptyDirectory, files) == Empty);
 }
 
-TEST_CASE("Pass directory witch contains 3 files", "[getdir]") {
+TEST(getdir, PassDirectoryWitchContainsThresFiles) {
   const int imagesCount = 3;
   const TempDirectory imagesDirectoryPath;
   createFiles(imagesDirectoryPath, imagesCount, "png");
@@ -48,10 +48,10 @@ TEST_CASE("Pass directory witch contains 3 files", "[getdir]") {
   const std::string imagesDirectory = imagesDirectoryPath.string();
   std::vector<std::string> files;
 
-  REQUIRE(getdir(imagesDirectory, files) == imagesCount);
+  ASSERT_TRUE(getdir(imagesDirectory, files) == imagesCount);
 }
 
-TEST_CASE("Pass directory witch contains 3 files and calib file", "[getdir]") {
+TEST(getdir, PassDirectoryWitchContainsThreeFilesAndCalibFile) {
   const int imagesCount = 3;
   const TempDirectory imagesDirectoryPath;
   createFiles(imagesDirectoryPath, imagesCount, "png");
@@ -65,24 +65,24 @@ TEST_CASE("Pass directory witch contains 3 files and calib file", "[getdir]") {
   std::vector<std::string> files;
 
   const int filesInDirectory = imagesCount + 1;
-  REQUIRE(getdir(imagesDirectory, files) == filesInDirectory);
+  ASSERT_TRUE(getdir(imagesDirectory, files) == filesInDirectory);
 }
 
 /// ImageFolderReader {
 
-TEST_CASE("pass path to zip file is not exist", "[ImageFolderReader]") {
+TEST(ImageFolderReader, PassPathToZipFileIsNotExist) {
   const std::string zipFile = "a.zip";
   const std::string calibFile = "";
   const std::string gammaFile = "";
   const std::string vignetteFile = "";
 
-  REQUIRE_THROWS([&] {
+  ASSERT_THROW([&] {
     ImageFolderReader imageFolderReader(zipFile, calibFile, gammaFile,
                                         vignetteFile);
-  }());
+  }(), std::runtime_error);
 }
 
-TEST_CASE("pass path to zip file and ZIPLIB not exist", "[ImageFolderReader]") {
+TEST(ImageFolderReader, PassPathToZipFileAndZIPLIBNotExist) {
   const TempDirectory tempDirectory;
   createFiles(tempDirectory, 1, ".zip");
 
@@ -91,25 +91,25 @@ TEST_CASE("pass path to zip file and ZIPLIB not exist", "[ImageFolderReader]") {
   const std::string gammaFile = "";
   const std::string vignetteFile = "";
 
-  REQUIRE_THROWS([&] {
+  ASSERT_THROW([&] {
     ImageFolderReader imageFolderReader(zipFile, calibFile, gammaFile,
                                         vignetteFile);
-  }());
+  }(), std::runtime_error);
 }
 
-TEST_CASE("pass empty directory", "[ImageFolderReader]") {
+TEST(ImageFolderReader, PassEmptyDirectory) {
   const std::string imagesDir = "";
   const std::string calibFile = "";
   const std::string gammaFile = "";
   const std::string vignetteFile = "";
 
-  REQUIRE_THROWS([&] {
+  ASSERT_THROW([&] {
     ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile,
                                         vignetteFile);
-  }());
+  }(), std::runtime_error);
 }
 
-TEST_CASE("pass empty string for calib file", "[ImageFolderReader]") {
+TEST(ImageFolderReader, PassEmptyStringForCalibFile) {
   const TempDirectory tempDirectory;
 
   createFiles(tempDirectory, 3, ".png");
@@ -119,13 +119,13 @@ TEST_CASE("pass empty string for calib file", "[ImageFolderReader]") {
   const std::string gammaFile = "";
   const std::string vignetteFile = "";
 
-  REQUIRE_THROWS([&] {
+  ASSERT_THROW([&] {
     ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile,
                                         vignetteFile);
-  }());
+  }(), std::runtime_error);
 }
 
-TEST_CASE("pass non existing calib file", "[ImageFolderReader]") {
+TEST(ImageFolderReader, PassNonExistingCalibFile) {
   const TempDirectory tempDirectory;
 
   createFiles(tempDirectory, 3, ".png");
@@ -136,14 +136,14 @@ TEST_CASE("pass non existing calib file", "[ImageFolderReader]") {
   const std::string vignetteFile = "";
 
   RedirectCerr redirect;
-  REQUIRE_THROWS([&] {
+  ASSERT_THROW([&] {
     ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile,
                                         vignetteFile);
-  }());
+  }(), std::runtime_error);
   redirect.release();
 }
 
-TEST_CASE("pass empty calib file", "[ImageFolderReader]") {
+TEST(ImageFolderReader, PassEmptyCalibFile) {
   const TempDirectory tempDirectory;
 
   createFiles(tempDirectory, 3, ".png");
@@ -155,15 +155,15 @@ TEST_CASE("pass empty calib file", "[ImageFolderReader]") {
 
   RedirectCout redirect;
   RedirectCerr redirect1;
-  REQUIRE_THROWS([&] {
+  ASSERT_THROW([&] {
     ImageFolderReader imageFolderReader(imagesDir, calibFile, gammaFile,
                                         vignetteFile);
-  }());
+  }(), std::runtime_error);
   redirect.release();
   redirect1.release();
 }
 
-TEST_CASE("pass ATAN calib file", "[ImageFolderReader]") {
+TEST(ImageFolderReader, PassATANCalibFile) {
   const std::array<double, 5> calibation = {
     0.535719308086809, 0.669566858850269, 0.493248545285398,
     0.500408664348414, 0.897966326944875};
@@ -187,16 +187,16 @@ TEST_CASE("pass ATAN calib file", "[ImageFolderReader]") {
                                       vignetteFile);
   redirect.release();
 
-  REQUIRE(imageFolderReader.width == outputImageDim(0));
-  REQUIRE(imageFolderReader.height == outputImageDim(1));
+  ASSERT_TRUE(imageFolderReader.width == outputImageDim(0));
+  ASSERT_TRUE(imageFolderReader.height == outputImageDim(1));
 
-  REQUIRE(imageFolderReader.widthOrg == inputImageDim(0));
-  REQUIRE(imageFolderReader.heightOrg == inputImageDim(1));
+  ASSERT_TRUE(imageFolderReader.widthOrg == inputImageDim(0));
+  ASSERT_TRUE(imageFolderReader.heightOrg == inputImageDim(1));
 
-  REQUIRE(dynamic_cast<dso::UndistortFOV*>(imageFolderReader.undistort) != nullptr);
+  ASSERT_TRUE(dynamic_cast<dso::UndistortFOV*>(imageFolderReader.undistort) != nullptr);
 }
 
-TEST_CASE("pass Pinhole calib file", "[ImageFolderReader]") {
+TEST(ImageFolderReader, PassPinholeCalibFile) {
   const std::array<double, 5> calibation = {
     0.535719308086809, 0.669566858850269, 0.493248545285398,
     0.500408664348414, 0};
@@ -220,13 +220,13 @@ TEST_CASE("pass Pinhole calib file", "[ImageFolderReader]") {
                                       vignetteFile);
   redirect.release();
 
-  REQUIRE(imageFolderReader.width  == outputImageDim(0));
-  REQUIRE(imageFolderReader.height == outputImageDim(1));
+  ASSERT_TRUE(imageFolderReader.width  == outputImageDim(0));
+  ASSERT_TRUE(imageFolderReader.height == outputImageDim(1));
 
-  REQUIRE(imageFolderReader.widthOrg  == inputImageDim(0));
-  REQUIRE(imageFolderReader.heightOrg == inputImageDim(1));
+  ASSERT_TRUE(imageFolderReader.widthOrg  == inputImageDim(0));
+  ASSERT_TRUE(imageFolderReader.heightOrg == inputImageDim(1));
 
-  REQUIRE(dynamic_cast<dso::UndistortPinhole*>(imageFolderReader.undistort) != nullptr);
+  ASSERT_TRUE(dynamic_cast<dso::UndistortPinhole*>(imageFolderReader.undistort) != nullptr);
 }
 
 /// }

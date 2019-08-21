@@ -20,7 +20,7 @@ CalibrationData Undistort2::loadCalibration(std::istream& inputStream) {
     calib.mDistortion = Undistort2::toEigen(std_vec);
 
     const int index = static_cast<int>(calib.mDistortion.size());
-    if(calib.mDistortion(index - 1) == 0.) {
+    if(calib.mDistortion.size() == 4) {
       calib.mType = CalibrationType::PinHoleCamera;
     } else {
       calib.mType = CalibrationType::RadTanCamera;
@@ -46,6 +46,16 @@ CalibrationData Undistort2::loadCalibration(std::istream& inputStream) {
   calib.mInput << 1280, 1024;
   calib.mOutput << 640, 480;
   return calib;
+}
+
+CalibrationType Undistort2::toCalibrationType(std::string_view type) {
+  if(type == "RadTan") {
+    return CalibrationType::RadTanCamera;
+  } if(type == "Pinhole") {
+    return CalibrationType::PinHoleCamera;
+  } else {
+    return CalibrationType::None;
+  }
 }
 
 } // namespace dso

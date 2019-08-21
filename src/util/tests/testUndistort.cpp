@@ -1,13 +1,12 @@
 // Catch2
-#include <catch/catch.hpp>
+#include <gtest/gtest.h>
 // Internal
 #include "testUtils.hpp"
 #include "../Undistort.hpp"
 
 using namespace dso;
 
-TEST_CASE("pass empty calib path",
-          "[Undistort, getUndistorterForFile]" ) {
+TEST(getUndistorterForFile, PassEmptyCalibPath) {
   const std::string calibFile    = "";
   const std::string gammaFile    = "";
   const std::string vignetteFile = "";
@@ -19,11 +18,10 @@ TEST_CASE("pass empty calib path",
   redirect1.release();
   redirect2.release();
 
-  REQUIRE(undistort == nullptr);
+  ASSERT_TRUE(undistort == nullptr);
 }
 
-TEST_CASE("pass non existing calib file",
-          "[Undistort, getUndistorterForFile]" ) {
+TEST(getUndistorterForFile, PassNonExistingCalibPath) {
   const std::string calibFile    = "/shit/calib.txt";
   const std::string gammaFile    = "";
   const std::string vignetteFile = "";
@@ -35,11 +33,10 @@ TEST_CASE("pass non existing calib file",
   redirect1.release();
   redirect2.release();
 
-  REQUIRE(undistort == nullptr);
+  ASSERT_TRUE(undistort == nullptr);
 }
 
-TEST_CASE("pass empty calib file",
-          "[Undistort, getUndistorterForFile]" ) {
+TEST(getUndistorterForFile, PassEmptyCalibFile) {
   TempDirectory tempDirectory;
   const std::string calibFile = createFile(tempDirectory,
                                            "calib.txt", "");
@@ -54,11 +51,10 @@ TEST_CASE("pass empty calib file",
   redirect1.release();
   redirect2.release();
 
-  REQUIRE(undistort == nullptr);
+  ASSERT_TRUE(undistort == nullptr);
 }
 
-TEST_CASE("pass RadTan calib file",
-          "[Undistort, getUndistorterForFile]" ) {
+TEST(getUndistorterForFile, PassRadTanCalibFile) {
   TempDirectory tempDirectory;
 
   std::string_view calibFileContent = 
@@ -81,7 +77,7 @@ TEST_CASE("pass RadTan calib file",
   redirect1.release();
   redirect2.release();
 
-  REQUIRE_FALSE(pUndistort == nullptr);
+  ASSERT_FALSE(pUndistort == nullptr);
 
   delete pUndistort;
 }

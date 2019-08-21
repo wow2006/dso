@@ -141,7 +141,7 @@ target_link_libraries(
 )
 
 if(ENABLE_TESTING)
-  find_package(Catch REQUIRED)
+  find_package(GTest REQUIRED)
 
   enable_testing()
 

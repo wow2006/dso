@@ -49,6 +49,8 @@ public:
     return tempMatrix;
   }
 
+  static CalibrationType toCalibrationType(std::string_view type);
+
 };
 
 } // namespace dso
