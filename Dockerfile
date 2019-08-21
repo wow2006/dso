@@ -20,7 +20,7 @@ RUN apt-get install -y --no-install-recommends \
                 libglew-dev
 
 RUN cd /usr/src/googletest && cmake -DBUILD_GTEST=ON -DBUILD_GMOCK=ON . \
-    make -j && make install
+    && make -j && make install
 
 RUN mkdir code
 WORKDIR code
