@@ -13,11 +13,14 @@ RUN apt-get install -y --no-install-recommends \
                 libsuitesparse-dev             \
                 libeigen3-dev                  \
                 libboost-all-dev               \
-                libopencv-dev
-
-RUN apt-get install -y --no-install-recommends \
+                libgtest-dev                   \
+                libbenchmark-dev               \
+                libopencv-dev                  \
                 libgl1-mesa-dev                \
                 libglew-dev
+
+RUN cd /usr/src/googletest && cmake -DBUILD_GTEST=ON -DBUILD_GMOCK=ON . \
+    make -j && make install
 
 RUN mkdir code
 WORKDIR code
