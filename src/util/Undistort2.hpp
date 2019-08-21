@@ -13,6 +13,7 @@ enum class CalibrationType {
   RadTanCamera
 };
 
+
 struct CalibrationData {
   Eigen::VectorXd mDistortion;
   CalibrationType mType;

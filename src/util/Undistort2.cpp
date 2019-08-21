@@ -15,8 +15,34 @@ CalibrationData Undistort2::loadCalibration(std::istream& inputStream) {
   std::getline(inputStream, line);
 
   CalibrationData calib;
-  calib.mType = CalibrationType::PinHoleCamera;
-  calib.mDistortion = Eigen::VectorXd::Zero(5);
+  if(std::isdigit(line.front())) {
+    auto std_vec = Undistort2::fromStringToVectorX<double>(line);
+    calib.mDistortion = Undistort2::toEigen(std_vec);
+
+    const int index = static_cast<int>(calib.mDistortion.size());
+    if(calib.mDistortion(index - 1) == 0.) {
+      calib.mType = CalibrationType::PinHoleCamera;
+    } else {
+      calib.mType = CalibrationType::RadTanCamera;
+    }
+  } else {
+    const auto itr = line.find(' ');
+    const auto typeString = line.substr(0, itr);
+    line = line.substr(itr+1);
+
+    auto std_vec = Undistort2::fromStringToVectorX<double>(line);
+    calib.mDistortion = Undistort2::toEigen(std_vec);
+    if(typeString == "RadTan") {
+      calib.mType = CalibrationType::RadTanCamera;
+    } else if(typeString == "Pinhole") {
+      calib.mType = CalibrationType::PinHoleCamera;
+    } else {
+      calib.mType = CalibrationType::None;
+    }
+  }
+
+  std::getline(inputStream, line);
+
   calib.mInput << 1280, 1024;
   calib.mOutput << 640, 480;
   return calib;

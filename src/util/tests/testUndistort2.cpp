@@ -59,25 +59,89 @@ TEST_CASE("Convert vector<doube>(4) to VectorXd(5)", "[Undistort2]" ) {
 }
 
 TEST_CASE("load PinHole calibration from stream", "[Undistort2]" ) {
-  constexpr unsigned int calibrationCount = 5;
-  const Eigen::Vector2i inputDim(1280, 1024);
-  const Eigen::Vector2i outputDim(640, 480);
   std::stringstream pinHoleCameraCalibration;
+
+  constexpr unsigned int calibrationCount = 5;
+  constexpr std::array<double, calibrationCount> calibrationValues{1, 2, 3, 4, 0};
+  Eigen::VectorXd calibrationEigen(calibrationCount);
+
+  int index = 0;
+  for(const auto value : calibrationValues) {
+    calibrationEigen(index++) = value;
+    pinHoleCameraCalibration << value << ' ';
+  }
+  pinHoleCameraCalibration << '\n';
+
+  const Eigen::Vector2i inputDim(1280, 1024);
+  pinHoleCameraCalibration << inputDim(0) << ' ' << inputDim(1) << '\n';
+  pinHoleCameraCalibration << "crop\n";
+
+  const Eigen::Vector2i outputDim(640, 480);
+  pinHoleCameraCalibration << outputDim(0) << ' ' << outputDim(1) << '\n';
+
 
   const auto calibration = dso::Undistort2::loadCalibration(pinHoleCameraCalibration);
 
   REQUIRE(calibration.mType == dso::CalibrationType::PinHoleCamera);
   REQUIRE(calibration.mDistortion.size() == calibrationCount);
-  REQUIRE(near(calibration.mDistortion(calibrationCount-1), 0.));
+  REQUIRE(near(calibration.mDistortion(calibrationCount), 0.));
+  REQUIRE(calibration.mInput == inputDim);
+  REQUIRE(calibration.mOutput == outputDim);
+}
+
+TEST_CASE("load Pinhole calibration from stream start with string", "[Undistort2]" ) {
+  std::stringstream RadTanCameraCalibration;
+
+  constexpr unsigned int calibrationCount = 5;
+  constexpr std::array<double, calibrationCount> calibrationValues{1, 2, 3, 4, 5};
+  Eigen::VectorXd calibrationEigen(calibrationCount);
+
+  RadTanCameraCalibration << "Pinhole ";
+  int index = 0;
+  for(const auto value : calibrationValues) {
+    calibrationEigen(index++) = value;
+    RadTanCameraCalibration << value << ' ';
+  }
+  RadTanCameraCalibration << '\n';
+
+  const Eigen::Vector2i inputDim(1280, 1024);
+  RadTanCameraCalibration << inputDim(0) << ' ' << inputDim(1) << '\n';
+  RadTanCameraCalibration << "crop\n";
+
+  const Eigen::Vector2i outputDim(640, 480);
+  RadTanCameraCalibration << outputDim(0) << ' ' << outputDim(1) << '\n';
+
+
+  const auto calibration = dso::Undistort2::loadCalibration(RadTanCameraCalibration);
+
+  REQUIRE(calibration.mType == dso::CalibrationType::PinHoleCamera);
+  REQUIRE(calibration.mDistortion.size() == calibrationCount);
+  REQUIRE(!near(calibration.mDistortion(calibrationCount-1), 0.));
   REQUIRE(calibration.mInput == inputDim);
   REQUIRE(calibration.mOutput == outputDim);
 }
 
 TEST_CASE("load RadTan calibration from stream", "[Undistort2]" ) {
-  constexpr unsigned int calibrationCount = 5;
-  const Eigen::Vector2i inputDim(1280, 1024);
-  const Eigen::Vector2i outputDim(640, 480);
   std::stringstream RadTanCameraCalibration;
+
+  constexpr unsigned int calibrationCount = 5;
+  constexpr std::array<double, calibrationCount> calibrationValues{1, 2, 3, 4, 5};
+  Eigen::VectorXd calibrationEigen(calibrationCount);
+
+  int index = 0;
+  for(const auto value : calibrationValues) {
+    calibrationEigen(index++) = value;
+    RadTanCameraCalibration << value << ' ';
+  }
+  RadTanCameraCalibration << '\n';
+
+  const Eigen::Vector2i inputDim(1280, 1024);
+  RadTanCameraCalibration << inputDim(0) << ' ' << inputDim(1) << '\n';
+  RadTanCameraCalibration << "crop\n";
+
+  const Eigen::Vector2i outputDim(640, 480);
+  RadTanCameraCalibration << outputDim(0) << ' ' << outputDim(1) << '\n';
+
 
   const auto calibration = dso::Undistort2::loadCalibration(RadTanCameraCalibration);
 
@@ -87,4 +151,37 @@ TEST_CASE("load RadTan calibration from stream", "[Undistort2]" ) {
   REQUIRE(calibration.mInput == inputDim);
   REQUIRE(calibration.mOutput == outputDim);
 }
+
+TEST_CASE("load RadTan calibration from stream start with string", "[Undistort2]" ) {
+  std::stringstream RadTanCameraCalibration;
+
+  constexpr unsigned int calibrationCount = 5;
+  constexpr std::array<double, calibrationCount> calibrationValues{1, 2, 3, 4, 5};
+  Eigen::VectorXd calibrationEigen(calibrationCount);
+
+  RadTanCameraCalibration << "RadTan ";
+  int index = 0;
+  for(const auto value : calibrationValues) {
+    calibrationEigen(index++) = value;
+    RadTanCameraCalibration << value << ' ';
+  }
+  RadTanCameraCalibration << '\n';
+
+  const Eigen::Vector2i inputDim(1280, 1024);
+  RadTanCameraCalibration << inputDim(0) << ' ' << inputDim(1) << '\n';
+  RadTanCameraCalibration << "crop\n";
+
+  const Eigen::Vector2i outputDim(640, 480);
+  RadTanCameraCalibration << outputDim(0) << ' ' << outputDim(1) << '\n';
+
+
+  const auto calibration = dso::Undistort2::loadCalibration(RadTanCameraCalibration);
+
+  REQUIRE(calibration.mType == dso::CalibrationType::RadTanCamera);
+  REQUIRE(calibration.mDistortion.size() == calibrationCount);
+  REQUIRE(!near(calibration.mDistortion(calibrationCount-1), 0.));
+  REQUIRE(calibration.mInput == inputDim);
+  REQUIRE(calibration.mOutput == outputDim);
+}
+
 
