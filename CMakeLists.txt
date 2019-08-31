@@ -9,8 +9,9 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/Doxygen.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/InsturctionSet.cmake)
 
-option(ENABLE_TESTING "Enable test cases" OFF)
-option(ENABLE_SPIKES  "Enable spikes"     OFF)
+option(ENABLE_TESTING   "Enable test cases" OFF)
+option(ENABLE_SPIKES    "Enable spikes"     OFF)
+option(ENABLE_BENCHMARK "Enable banchmark"  OFF)
 
 # required libraries
 find_package(SuiteParse    REQUIRED)
@@ -150,5 +151,11 @@ endif()
 
 if(ENABLE_SPIKES)
   add_subdirectory(spikes)
+endif()
+
+if(ENABLE_BENCHMARK)
+  find_package(benchmark REQUIRED)
+
+  add_subdirectory(benchmark)
 endif()
 

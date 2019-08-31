@@ -230,7 +230,8 @@ struct FrameHessian {
 
     if (debugImage != 0)
       delete debugImage;
-  };
+  }
+
   inline FrameHessian() {
     instanceCounter++;
     flaggedForMarginalization = false;
@@ -239,7 +240,7 @@ struct FrameHessian {
     frameEnergyTH = 8 * 8 * patternNum;
 
     debugImage = 0;
-  };
+  }
 
   void makeImages(float *color, CalibHessian *HCalib);
 
@@ -273,22 +274,21 @@ struct FrameHessian {
 };
 
 struct CalibHessian {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   static int instanceCounter;
 
-  VecC value_zero;
-  VecC value_scaled;
+  VecC  value_zero;
+  VecC  value_scaled;
   VecCf value_scaledf;
   VecCf value_scaledi;
-  VecC value;
-  VecC step;
-  VecC step_backup;
-  VecC value_backup;
-  VecC value_minus_value_zero;
+  VecC  value;
+  VecC  step;
+  VecC  step_backup;
+  VecC  value_backup;
+  VecC  value_minus_value_zero;
 
   inline ~CalibHessian() { instanceCounter--; }
   inline CalibHessian() {
-
     VecC initial_value = VecC::Zero();
     initial_value[0] = fxG[0];
     initial_value[1] = fyG[0];
@@ -302,7 +302,7 @@ struct CalibHessian {
     instanceCounter++;
     for (int i = 0; i < 256; i++)
       Binv[i] = B[i] = i; // set gamma function to identity
-  };
+  }
 
   // normal mode: use the optimized parameters everywhere!
   inline float &fxl() { return value_scaledf[0]; }
@@ -328,7 +328,7 @@ struct CalibHessian {
     this->value_scaledi[2] = -this->value_scaledf[2] / this->value_scaledf[0];
     this->value_scaledi[3] = -this->value_scaledf[3] / this->value_scaledf[1];
     this->value_minus_value_zero = this->value - this->value_zero;
-  };
+  }
 
   inline void setValueScaled(const VecC &value_scaled) {
     this->value_scaled = value_scaled;
@@ -343,7 +343,7 @@ struct CalibHessian {
     this->value_scaledi[1] = 1.0f / this->value_scaledf[1];
     this->value_scaledi[2] = -this->value_scaledf[2] / this->value_scaledf[0];
     this->value_scaledi[3] = -this->value_scaledf[3] / this->value_scaledf[1];
-  };
+  }
 
   float Binv[256];
   float B[256];

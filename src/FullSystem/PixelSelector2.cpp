@@ -98,7 +98,7 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out,
       idealPotential = 1;
     }
 
-    if (recursionsLeft > 0 && quotia > 1.25 && currentPotential > 1) {
+    if (recursionsLeft > 0 && quotia > 1.25f && currentPotential > 1) {
       // re-sample to get more points!
       // potential needs to be smaller
       if (idealPotential >= currentPotential) {
@@ -106,9 +106,9 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out,
       }
 
 #ifdef LOGGING
-      printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot %d->%d.\n ",
-                 100 *
-                 numHave / (float)(wG[0] * hG[0]),
+      printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot "
+             "%d->%d.\n ",
+             100 * numHave / (float)(wG[0] * hG[0]),
              100 * numWant / (float)(wG[0] * hG[0]), currentPotential,
              idealPotential);
 #endif
@@ -121,9 +121,9 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out,
       }
 
 #ifdef LOGGING
-      printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot %d->%d.\n ",
-                 100 *
-                 numHave / (float)(wG[0] * hG[0]),
+      printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot "
+             "%d->%d.\n ",
+             100 * numHave / (float)(wG[0] * hG[0]),
              100 * numWant / (float)(wG[0] * hG[0]), currentPotential,
              idealPotential);
 #endif
@@ -132,13 +132,13 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out,
     }
   }
 
-  int numHaveSub = numHave;
-  if (quotia < 0.95) {
+  int numHaveSub = static_cast<int>(numHave);
+  if (quotia < 0.95f) {
     int wh = wG[0] * hG[0];
     int rn = 0;
-    unsigned char charTH = 255 * quotia;
+    const auto charTH = static_cast<unsigned char>(255.f * quotia);
     for (int i = 0; i < wh; i++) {
-      if (map_out[i] != 0) {
+      if (map_out[i] != 0.f) {
         if (randomPattern[rn] > charTH) {
           map_out[i] = 0;
           numHaveSub--;
@@ -149,9 +149,9 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out,
   }
 
 #ifdef LOGGING
-  printf("PixelSelector: have %.2f%%, need %.2f%%. KEEPCURR with pot %d ->%d.Subsampled to % .2f % %\n ",
-             100 *
-             numHave / (float)(wG[0] * hG[0]),
+  printf("PixelSelector: have %.2f%%, need %.2f%%. KEEPCURR with pot %d "
+         "->%d.Subsampled to % .2f % %\n ",
+         100 * numHave / (float)(wG[0] * hG[0]),
          100 * numWant / (float)(wG[0] * hG[0]), currentPotential,
          idealPotential, 100 * numHaveSub / (float)(wG[0] * hG[0]));
 #endif
@@ -159,39 +159,46 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out,
   currentPotential = idealPotential;
 
   if (plot) {
-    int w = wG[0];
-    int h = hG[0];
-
-    MinimalImageB3 img(w, h);
-
-    for (int i = 0; i < w * h; i++) {
-      float c = fh->dI[i][0] * 0.7;
-      if (c > 255) {
-        c = 255;
-      }
-      img.at(i) = Vec3b(c, c, c);
-    }
-    IOWrap::displayImage("Selector Image", &img);
-
-    for (int y = 0; y < h; y++)
-      for (int x = 0; x < w; x++) {
-        int i = x + y * w;
-        if (map_out[i] == 1)
-          img.setPixelCirc(x, y, Vec3b(0, 255, 0));
-        else if (map_out[i] == 2)
-          img.setPixelCirc(x, y, Vec3b(255, 0, 0));
-        else if (map_out[i] == 4)
-          img.setPixelCirc(x, y, Vec3b(0, 0, 255));
-      }
-    IOWrap::displayImage("Selector Pixels", &img);
+    draw(fh, map_out);
   }
 
   return numHaveSub;
 }
 
-void PixelSelector::makeHists(const FrameHessian *const fh) {
-  gradHistFrame = fh;
-  float *mapmax0 = fh->absSquaredGrad[0];
+void PixelSelector::draw(const FrameHessian *const fh, float *map_out) {
+  const int w = wG[0];
+  const int h = hG[0];
+  const int wh = w * h;
+
+  MinimalImageB3 img(w, h);
+
+  for (int i = 0; i < wh; i++) {
+    float c = fh->dI[i][0] * 0.7f;
+    if (c > 255) {
+      c = 255;
+    }
+    img.at(i) = Vec3b(c, c, c);
+  }
+  IOWrap::displayImage("Selector Image", &img);
+
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      const int i = x + y * w;
+      if (map_out[i] == 1.f) {
+        img.setPixelCirc(x, y, Vec3b(0, 255, 0));
+      } else if (map_out[i] == 2.f) {
+        img.setPixelCirc(x, y, Vec3b(255, 0, 0));
+      } else if (map_out[i] == 4.f) {
+        img.setPixelCirc(x, y, Vec3b(0, 0, 255));
+      }
+    }
+  }
+  IOWrap::displayImage("Selector Pixels", &img);
+}
+
+void PixelSelector::makeHists(const FrameHessian *const frameHessian) {
+  gradHistFrame = frameHessian;
+  float *mapmax0 = frameHessian->absSquaredGrad[0];
 
   int w = wG[0];
   int h = hG[0];
@@ -203,19 +210,19 @@ void PixelSelector::makeHists(const FrameHessian *const fh) {
   for (int y = 0; y < h32; y++) {
     for (int x = 0; x < w32; x++) {
       float *map0 = mapmax0 + 32 * x + 32 * y * w;
-      int *hist0 = gradHist.data(); // + 50*(x+y*w32);
+      int *hist0 = gradHist.data();
       memset(hist0, 0, sizeof(int) * 50);
 
       for (int j = 0; j < 32; j++) {
         for (int i = 0; i < 32; i++) {
-          int it = i + 32 * x;
-          int jt = j + 32 * y;
+          const int it = i + 32 * x;
+          const int jt = j + 32 * y;
 
           if (it > w - 2 || jt > h - 2 || it < 1 || jt < 1) {
             continue;
           }
 
-          int g = sqrtf(map0[i + j * w]);
+          int g = static_cast<int>(sqrtf(map0[i + j * w]));
 
           if (g > 48) {
             g = 48;
@@ -281,15 +288,16 @@ void PixelSelector::makeHists(const FrameHessian *const fh) {
     }
   }
 }
+
 // Select point in 32x32 grid?!
 // check JakobEngel sec. 3.2 step:1
 Eigen::Vector3i PixelSelector::select(const FrameHessian *const frameHessian,
                                       float *map_out, int pot, float thFactor) {
   Eigen::Vector3f const *const map0 = frameHessian->dI;
 
-  const float * const mapmax0 = frameHessian->absSquaredGrad[0];
-  const float * const mapmax1 = frameHessian->absSquaredGrad[1];
-  const float * const mapmax2 = frameHessian->absSquaredGrad[2];
+  const float *const mapmax0 = frameHessian->absSquaredGrad[0];
+  const float *const mapmax1 = frameHessian->absSquaredGrad[1];
+  const float *const mapmax2 = frameHessian->absSquaredGrad[2];
 
   const int w  = wG[0];
   const int w1 = wG[1];
@@ -303,8 +311,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const frameHessian,
       Vec2f(0.8315, 0.5556), Vec2f(0.8315, -0.5556), Vec2f(0.5556, -0.8315),
       Vec2f(0.9808, 0.1951), Vec2f(0.9239, -0.3827), Vec2f(0.7071, -0.7071),
       Vec2f(0.5556, 0.8315), Vec2f(0.9808, -0.1951), Vec2f(1.0000, 0.0000),
-      Vec2f(0.1951, -0.9808)
-  };
+      Vec2f(0.1951, -0.9808)};
 
   // Clear map_out buffer
   const int imageSizeInPixel = w * h;
@@ -319,7 +326,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const frameHessian,
       const int my3 = std::min((4 * pot), h - y4);
       const int mx3 = std::min((4 * pot), w - x4);
 
-      int bestIdx4 = -1;
+      int bestIdx4   = -1;
       float bestVal4 = 0;
 
       const Vec2f dir4 = directions[randomPattern[n2] & 0xF];
@@ -352,23 +359,25 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const frameHessian,
                 for (int x1 = 0; x1 < mx1; x1 += 1) {
                   assert(x1 + x234 < w);
                   assert(y1 + y234 < h);
-                  int idx = x1 + x234 + w * (y1 + y234);
-                  int xf = x1 + x234;
-                  int yf = y1 + y234;
+                  const int idx = x1 + x234 + w * (y1 + y234);
+                  const int xf = x1 + x234;
+                  const int yf = y1 + y234;
 
-                  if (xf < 4 || xf >= w - 5 || yf < 4 || yf > h - 4)
+                  if (xf < 4 || xf >= w - 5 || yf < 4 || yf > h - 4) {
                     continue;
+                  }
 
-                  float pixelTH0 = thsSmoothed[(xf >> 5) + (yf >> 5) * thsStep];
-                  float pixelTH1 = pixelTH0 * dw1;
-                  float pixelTH2 = pixelTH1 * dw2;
+                  const float pixelTH0 = thsSmoothed[(xf >> 5) + (yf >> 5) * thsStep];
+                  const float pixelTH1 = pixelTH0 * dw1;
+                  const float pixelTH2 = pixelTH1 * dw2;
 
-                  float ag0 = mapmax0[idx];
+                  const float ag0 = mapmax0[idx];
                   if (ag0 > pixelTH0 * thFactor) {
-                    Vec2f ag0d = map0[idx].tail<2>();
-                    float dirNorm = fabsf((float)(ag0d.dot(dir2)));
-                    if (!setting_selectDirectionDistribution)
+                    const Vec2f ag0d = map0[idx].tail<2>();
+                    float dirNorm = std::abs(ag0d.dot(dir2));
+                    if (!setting_selectDirectionDistribution) {
                       dirNorm = ag0;
+                    }
 
                     if (dirNorm > bestVal2) {
                       bestVal2 = dirNorm;
@@ -377,16 +386,19 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const frameHessian,
                       bestIdx4 = -2;
                     }
                   }
-                  if (bestIdx3 == -2)
-                    continue;
 
-                  float ag1 = mapmax1[(int)(xf * 0.5f + 0.25f) +
-                                      (int)(yf * 0.5f + 0.25f) * w1];
+                  if (bestIdx3 == -2) {
+                    continue;
+                  }
+
+                  float ag1 = mapmax1[static_cast<int>(xf * 0.5f + 0.25f) +
+                                      static_cast<int>(yf * 0.5f + 0.25f) * w1];
                   if (ag1 > pixelTH1 * thFactor) {
                     Vec2f ag0d = map0[idx].tail<2>();
-                    float dirNorm = fabsf((float)(ag0d.dot(dir3)));
-                    if (!setting_selectDirectionDistribution)
+                    float dirNorm = std::abs(ag0d.dot(dir3));
+                    if (!setting_selectDirectionDistribution) {
                       dirNorm = ag1;
+                    }
 
                     if (dirNorm > bestVal3) {
                       bestVal3 = dirNorm;
@@ -394,16 +406,19 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const frameHessian,
                       bestIdx4 = -2;
                     }
                   }
-                  if (bestIdx4 == -2)
-                    continue;
 
-                  float ag2 = mapmax2[(int)(xf * 0.25f + 0.125) +
-                                      (int)(yf * 0.25f + 0.125) * w2];
+                  if (bestIdx4 == -2) {
+                    continue;
+                  }
+
+                  const float ag2 = mapmax2[static_cast<int>(xf * 0.25f + 0.125) +
+                                      static_cast<int>(yf * 0.25f + 0.125) * w2];
                   if (ag2 > pixelTH2 * thFactor) {
-                    Vec2f ag0d = map0[idx].tail<2>();
-                    float dirNorm = fabsf((float)(ag0d.dot(dir4)));
-                    if (!setting_selectDirectionDistribution)
+                    const Vec2f ag0d = map0[idx].tail<2>();
+                    float dirNorm = std::abs(ag0d.dot(dir4));
+                    if (!setting_selectDirectionDistribution) {
                       dirNorm = ag2;
+                    }
 
                     if (dirNorm > bestVal4) {
                       bestVal4 = dirNorm;

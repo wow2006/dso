@@ -14,6 +14,13 @@ foreach(test_target ${test_targets})
     GTest::GTest
     GTest::Main
     dso
+    $<$<CXX_COMPILER_ID:Clang>:-fsanitize=memory>
+  )
+
+  target_compile_options(
+    ${test_target}
+    PUBLIC
+    $<$<CXX_COMPILER_ID:Clang>:-g;-Wno-global-constructors;-fsanitize=memory;-fno-omit-frame-pointer>
   )
 
   add_test(

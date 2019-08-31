@@ -57,7 +57,7 @@ TEST(getUndistorterForFile, PassEmptyCalibFile) {
 TEST(getUndistorterForFile, PassRadTanCalibFile) {
   TempDirectory tempDirectory;
 
-  std::string_view calibFileContent = 
+  std::string_view calibFileContent =
     "RadTan 0.5 0.5 0.5 0.5 0 0 0 0\n"
     "640 480\n"
     "crop\n"

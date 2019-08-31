@@ -1,6 +1,6 @@
 # /spikes/CMakeLists.txt
 
-set(executables spikesAddActiveFrame spikesPixelSelector)
+set(executables spikesAddActiveFrame spikesPixelSelector spikesPixelSelector2)
 
 foreach(executable ${executables})
 

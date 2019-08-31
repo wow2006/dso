@@ -42,6 +42,8 @@ public:
   int makeMaps(const FrameHessian *const fh, float *map_out, float density,
                int recursionsLeft = 1, bool plot = false, float thFactor = 1);
 
+  void draw(const FrameHessian *const fh, float *map_out);
+
   int currentPotential;
 
   bool allowFast;
