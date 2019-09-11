@@ -351,11 +351,11 @@ int main(int argc, char **argv) {
   IOWrap::PangolinDSOViewer *viewer = 0;
   if (!disableAllDisplay) {
     viewer = new IOWrap::PangolinDSOViewer(wG[0], hG[0], false);
-    fullSystem->outputWrapper.push_back(viewer);
+    fullSystem->outputWrappers.push_back(viewer);
   }
 
   if (useSampleOutput)
-    fullSystem->outputWrapper.push_back(new IOWrap::SampleOutputWrapper());
+    fullSystem->outputWrappers.push_back(new IOWrap::SampleOutputWrapper());
 
   // to make MacOS happy: run this in dedicated thread -- and use this one to
   // run the GUI.
@@ -434,7 +434,7 @@ int main(int argc, char **argv) {
             printf("RESETTING!\n");
 
             std::vector<IOWrap::Output3DWrapper *> wraps =
-              fullSystem->outputWrapper;
+              fullSystem->outputWrappers;
             delete fullSystem;
 
             for (IOWrap::Output3DWrapper *ow : wraps)
@@ -444,7 +444,7 @@ int main(int argc, char **argv) {
             fullSystem->setGammaFunction(reader->getPhotometricGamma());
             fullSystem->linearizeOperation = (playbackSpeed == 0);
 
-            fullSystem->outputWrapper = wraps;
+            fullSystem->outputWrappers = wraps;
 
             setting_fullResetRequested = false;
           }
@@ -503,7 +503,7 @@ int main(int argc, char **argv) {
 
   runthread.join();
 
-  for (IOWrap::Output3DWrapper *ow : fullSystem->outputWrapper) {
+  for (IOWrap::Output3DWrapper *ow : fullSystem->outputWrappers) {
     ow->join();
     delete ow;
   }

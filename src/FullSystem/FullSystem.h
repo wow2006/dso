@@ -22,26 +22,28 @@
  */
 
 #pragma once
-
+// STL
 #include <cmath>
 #include <deque>
-#include <vector>
 #include <fstream>
 #include <iostream>
-
-#include "util/NumType.h"
-#include "util/globalCalib.h"
-
-#include "FullSystem/HessianBlocks.h"
-#include "FullSystem/PixelSelector2.h"
-#include "FullSystem/Residuals.h"
-#include "OptimizationBackend/EnergyFunctional.h"
+#include <mutex>
+#include <thread>
+#include <vector>
+// Internal
+// util
 #include "util/FrameShell.h"
 #include "util/IndexThreadReduce.h"
 #include "util/NumType.h"
+#include "util/globalCalib.h"
+// FullSystem
+#include "FullSystem/HessianBlocks.h"
+#include "FullSystem/PixelSelector2.h"
+#include "FullSystem/Residuals.h"
+// OptimizationBackend
+#include "OptimizationBackend/EnergyFunctional.h"
 
 constexpr int gMaxActiveFrames = 100;
-
 
 namespace dso {
 namespace IOWrap {
@@ -122,96 +124,87 @@ class FullSystem {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  /** 
-   * @brief 
+  /**
+   * @brief Default Constuctor
    */
   FullSystem();
 
-  /** 
-   * @brief 
+  /**
+   * @brief Default Destructor
    */
-  virtual ~FullSystem();
+  ~FullSystem();
 
-  /** 
+  /**
    * @brief adds a new frame, and creates point & residual structs.
-   * 
-   * @param image
-   * @param id
+   *
+   * @param image input raw image
+   * @param id input image id
    */
   void addActiveFrame(ImageAndExposure *image, int id);
 
-  FrameHessian* addNewFrameToHistory(ImageAndExposure *image, int id);
+  FrameHessian *addNewFrameToHistory(ImageAndExposure *image, int id);
 
-  void makeImageAndDerivatives(FrameHessian* pFrame, const ImageAndExposure* pImage);
+  void makeImageAndDerivatives(FrameHessian *pFrame,
+                               const ImageAndExposure *pImage);
 
-  void initializingFrame(FrameHessian* pFrame, boost::unique_lock<boost::mutex>& lock);
+  void initializingFrame(FrameHessian* pFrame, std::unique_lock<std::mutex>& lock);
 
   void swapTrackingReference();
 
-  bool initialTrackingFailed(const Vec4& tres);
+  bool initialTrackingFailed(const Vec4 &tres);
 
-  bool isNeedToMakeKF(FrameHessian* pFrame, const Vec4& tres);
+  bool isNeedToMakeKF(FrameHessian *pFrame, const Vec4 &tres);
 
   // marginalizes a frame. drops / marginalizes points & residuals.
   void marginalizeFrame(FrameHessian *frame);
 
-  /** 
-   * @brief 
+  /**
+   * @brief Block system until mapping is finished
    */
   void blockUntilMappingIsFinished();
 
-  /** 
-   * @brief 
-   * 
-   * @param mnumOptIts
-   * 
-   * @return 
+  /**
+   * @brief optimize TODO
+   *
+   * @param mnumOptIts number of iterations
+   *
+   * @return TODO
    */
   float optimize(int mnumOptIts);
 
-  /** 
-   * @brief 
-   * 
+  /**
+   * @brief
+   *
    * @param file
    */
   void printResult(std::string file);
 
-  /** 
-   * @brief 
-   * 
+  /**
+   * @brief
+   *
    * @param name
    */
   void debugPlot(std::string name);
 
-  /** 
-   * @brief 
+  /**
+   * @brief
    */
   void printFrameLifetimes();
 
   // contains pointers to active frames
-  std::vector<IOWrap::Output3DWrapper *> outputWrapper;
+  std::vector<IOWrap::Output3DWrapper *> outputWrappers;
 
   bool isLost;
   bool initFailed;
   bool initialized;
   bool linearizeOperation;
 
-  /** 
-   * @brief 
-   * 
-   * @param BInv
+  /**
+   * @brief set gamma calibration
+   *
+   * @param BInv raw pointer to gamma calibration
    */
   void setGammaFunction(float *BInv);
-
-  /** 
-   * @brief 
-   * 
-   * @param originalCalib
-   * @param originalW
-   * @param originalH
-   */
-  void setOriginalCalib(const VecXf &originalCalib, int originalW,
-                        int originalH);
 
 private:
   CalibHessian Hcalib;
@@ -290,8 +283,6 @@ private:
 
   void printLogLine();
 
-  void printEvalLine();
-
   void printEigenValLine();
 
   std::ofstream *calibLog;
@@ -320,7 +311,7 @@ private:
   // ====================================================
   // changed by tracker-thread. protected by trackMutex
   // ====================================================
-  boost::mutex trackMutex;
+  std::mutex trackMutex;
   std::vector<FrameShell *> allFrameHistory;
   CoarseInitializer *coarseInitializer;
   Vec5 lastCoarseRMSE;

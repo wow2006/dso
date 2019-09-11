@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     pFullSystem->setGammaFunction(pReader->getPhotometricGamma());
     pFullSystem->linearizeOperation = true;
 
-    pFullSystem->outputWrapper.push_back(pViewer.get());
+    pFullSystem->outputWrappers.push_back(pViewer.get());
 
     for(int i = 0; i < pReader->getNumImages(); ++i) {
       auto pImage = pReader->getImage(i);

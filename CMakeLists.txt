@@ -44,6 +44,8 @@ target_sources(
   ${PROJECT_SOURCE_DIR}/src/FullSystem/ImmaturePoint.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/HessianBlocks.cpp
   ${PROJECT_SOURCE_DIR}/src/FullSystem/PixelSelector2.cpp
+  # FrontEnd
+  ${PROJECT_SOURCE_DIR}/src/FrontEnd/FullSystemFrontEnd.cpp
   # OptimizationBackend
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/EnergyFunctional.cpp
   ${PROJECT_SOURCE_DIR}/src/OptimizationBackend/AccumulatedTopHessian.cpp
@@ -100,7 +102,7 @@ target_compile_options(
   dso
   PUBLIC
   $<$<CXX_COMPILER_ID:Clang>:-Weverything;-Wno-c++98-compat-pedantic;-fcolor-diagnostics;-Wno-unused-macros>
-  $<$<CXX_COMPILER_ID:GNU>:-Wall;-W>
+  #$<$<CXX_COMPILER_ID:GNU>:-Wall;-W>
 )
 
 # ===========================================
